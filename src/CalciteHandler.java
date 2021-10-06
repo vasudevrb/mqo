@@ -31,7 +31,14 @@ public class CalciteHandler {
                 .defaultSchema(rootSchema)
                 .build();
 
-        String sql = "SELECT * FROM \"public\".\"region\"";
+        String sql = "SELECT sum(\"l_extendedprice\" * \"l_discount\") as revenue" +
+                " FROM \"public\".\"lineitem\"" +
+                " WHERE" +
+                " \"l_shipdate\" >= date '1994-01-01'" +
+                " AND \"l_shipdate\" < date '1994-01-01' + interval '1' year" +
+                " AND \"l_discount\" between 0.06 - 0.01 AND 0.06 + 0.01" +
+                " AND \"l_quantity\" < 24";
+
 
         Planner planner = Frameworks.getPlanner(config);
         SqlNode node = planner.parse(sql);
@@ -50,7 +57,7 @@ public class CalciteHandler {
 
         System.out.println("Result is");
         while (rs.next()) {
-            for (int i = 1; i < rs.getMetaData().getColumnCount(); i++) {
+            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
                 System.out.print(rs.getObject(i) + ", ");
             }
             System.out.println();
