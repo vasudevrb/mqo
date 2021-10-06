@@ -43,8 +43,10 @@ public class CalciteHandler {
         relNode.explain(relWriter);
 
 
-        PreparedStatement run = RelRunners.run(relNode);
-        ResultSet rs = connection.prepareStatement(sql).executeQuery();
+        RelRunner runner = connection.unwrap(RelRunner.class);
+        PreparedStatement run = runner.prepare(relNode);
+        run.execute();
+        ResultSet rs = run.getResultSet();
 
         System.out.println("Result is");
         while (rs.next()) {
