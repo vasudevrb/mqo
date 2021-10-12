@@ -1,5 +1,6 @@
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
@@ -11,6 +12,7 @@ public class Configuration {
     public Configuration(SchemaPlus rootSchema) {
         this.frameworkConfig = Frameworks.newConfigBuilder()
                 .parserConfig(getParserConfig())
+                .sqlToRelConverterConfig(getSqlToRelConverterConfig())
                 .defaultSchema(rootSchema)
                 .build();
     }
@@ -27,5 +29,12 @@ public class Configuration {
         return SqlParser.configBuilder()
                 .setCaseSensitive(false)
                 .build();
+    }
+
+    private SqlToRelConverter.Config getSqlToRelConverterConfig() {
+        return SqlToRelConverter.config()
+                .withTrimUnusedFields(false)
+                .withExpand(true)
+                .withDecorrelationEnabled(true);
     }
 }
