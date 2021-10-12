@@ -18,13 +18,10 @@ public class Queries {
 
     public static final String mv0 = "SELECT \"r_name\" FROM \"public\".\"region\"";
     public static final String q0 = "SELECT \"r_name\" FROM \"public\".\"region\" WHERE \"r_name\" LIKE 'A%'";
-    public static final String qq0 = "SELECT * FROM \"public\".\"MV0\" WHERE \"r_name\" LIKE 'A%'";
 
-    public static final String mv2 = "SELECT \"l_discount\", \"l_quantity\" FROM \"public\".\"lineitem\" WHERE \"l_quantity\" < 24";
+    public static final String mv2 = "SELECT \"l_discount\", \"l_quantity\" FROM \"lineitem\" WHERE \"l_quantity\" < 24";
     public static final String q2 = "SELECT \"l_discount\" FROM \"public\".\"lineitem\" WHERE \"l_quantity\" < 4";
-    public static final String qq2 = "SELECT \"l_discount\" FROM \"public\".\"MV2\" WHERE \"l_quantity\" < 4";
 
     public static final String mv3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"supplier\" WHERE \"s_suppkey\" < 1000";
-    public static final String q3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"supplier\" WHERE \"s_suppkey\" < 100";
-    public static final String qq3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"public\".\"MV3\" WHERE \"s_suppkey\" < 100";
+    public static final String q3 = "SELECT \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 100";
 }
