@@ -137,7 +137,7 @@ public class MVHandler {
             } catch (Exception e) {
                 throw rethrow(e);
             }
-        });
+        }, config);
     }
 
     public <E extends Throwable> RuntimeException rethrow(Throwable e) throws E {
