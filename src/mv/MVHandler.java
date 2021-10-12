@@ -16,16 +16,13 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -34,15 +31,15 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.*;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.tools.*;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Programs;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import javax.sql.DataSource;
-import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,35 +48,23 @@ import java.util.function.Function;
 public class MVHandler {
 
     private CalciteConnection calciteConnection;
+    private FrameworkConfig config;
 
-    public MVHandler(CalciteConnection calciteConnection) {
+    public MVHandler(CalciteConnection calciteConnection, FrameworkConfig config) {
         this.calciteConnection = calciteConnection;
+        this.config = config;
     }
 
     public boolean isDerivable(String mvId, String mv, String query) {
-        QueryConf conf = new QueryConf("schema", ImmutableList.of(Pair.of(mv, mvId)), query, this, null);
-        final TestConfig testConfig = build(conf);
-        final Function<String, Boolean> checker;
-
-        if (conf.checker != null) {
-            checker = conf.checker;
-        } else {
-            checker = resultContains(
-                    "EnumerableTableScan(table=[[" + testConfig.defaultSchema + ", MV0]]");
-        }
-        final List<RelNode> substitutes = optimize(testConfig);
-        substitutes.forEach((sub) -> System.out.println("Found: " + RelOptUtil.toString(sub)));
-        return !substitutes.isEmpty();
+        return getDerivedPlan(mvId, mv, query) != null;
     }
 
-    public RelNode getDerivedPlan(String mvId, String mv, String query) throws SQLException {
-        QueryConf conf = new QueryConf("schema", ImmutableList.of(Pair.of(mv, mvId)), query, this, null);
+    public RelNode getDerivedPlan(String mvId, String mv, String query) {
+        QueryConf conf = new QueryConf("schema", ImmutableList.of(Pair.of(mv, mvId)), query);
         final TestConfig testConfig = build(conf);
 
         final List<RelNode> substitutes = optimize(testConfig);
-        RelNode rl = substitutes.isEmpty() ? null : substitutes.get(0);
-
-        return rl;
+        return substitutes.isEmpty() ? null : substitutes.get(0);
     }
 
     private List<RelNode> optimize(TestConfig testConfig) {
@@ -92,12 +77,10 @@ public class MVHandler {
     private List<RelNode> optimize2(TestConfig testConfig) {
         RelNode queryRel = testConfig.queryRel;
         RelOptPlanner planner = queryRel.getCluster().getPlanner();
-        RelTraitSet traitSet = queryRel.getCluster().traitSet()
-                .replace(EnumerableConvention.INSTANCE);
+        RelTraitSet traitSet = queryRel.getCluster().traitSet().replace(EnumerableConvention.INSTANCE);
         RelOptUtil.registerDefaultRules(planner, true, false);
         return ImmutableList.of(
-                Programs.standard().run(
-                        planner, queryRel, traitSet, testConfig.materializations, ImmutableList.of()));
+                Programs.standard().run(planner, queryRel, traitSet, testConfig.materializations, ImmutableList.of()));
     }
 
     private RelNode canonicalize(RelNode rel) {
@@ -123,35 +106,14 @@ public class MVHandler {
         return hepPlanner.findBestExp();
     }
 
-    protected Function<String, Boolean> resultContains(final String... expected) {
-        return s -> {
-            String sLinux = Util.toLinux(s);
-            for (String st : expected) {
-                if (!sLinux.contains(Util.toLinux(st))) {
-                    return false;
-                }
-            }
-            return true;
-        };
-    }
-
     private TestConfig build(QueryConf sql) {
         return Frameworks.withPlanner((cluster, relOptSchema, rootSchema) -> {
             cluster.getPlanner().setExecutor(new RexExecutorImpl(DataContexts.EMPTY));
             try {
-                //TODO Add schema here
-//                SchemaPlus defaultSchema = calciteConnection.getRootSchema();
                 DataSource dataSource = JdbcSchema.dataSource("jdbc:postgresql:tpch_test", "org.postgresql.Driver", "postgres", "vasu");
                 SchemaPlus defaultSchema = rootSchema.add("public", JdbcSchema.create(rootSchema, "public", dataSource, null, null));
 
-//                if (sql.getDefaultSchemaSpec() == null) {
-//                    defaultSchema = rootSchema.add("hr",
-//                            new ReflectiveSchema(new MaterializationTest.HrFKUKSchema()));
-//                } else {
-//                    defaultSchema = CalciteAssert.addSchema(rootSchema, sql.getDefaultSchemaSpec());
-//                }
                 final RelNode queryRel = toRel(cluster, rootSchema, defaultSchema, sql.query);
-//                System.out.println("Original Query: " + RelOptUtil.toString(canonicalize(queryRel)));
 
                 final List<RelOptMaterialization> mvs = new ArrayList<>();
                 final RelBuilder relBuilder =
@@ -200,7 +162,7 @@ public class MVHandler {
                 catalogReader, new JavaTypeFactoryImpl(), SqlConformanceEnum.DEFAULT);
         final SqlNode validated = validator.validate(parsed);
         final SqlToRelConverter.Config config = SqlToRelConverter.config()
-                .withTrimUnusedFields(true)
+                .withTrimUnusedFields(false)
                 .withExpand(true)
                 .withDecorrelationEnabled(true);
         final SqlToRelConverter converter = new SqlToRelConverter(
@@ -228,6 +190,18 @@ public class MVHandler {
             this.defaultSchema = defaultSchema;
             this.queryRel = queryRel;
             this.materializations = materializations;
+        }
+    }
+
+    static class QueryConf {
+        public String schemaName;
+        public List<Pair<String, String>> materializedViews;
+        public String query;
+
+        public QueryConf(String schemaName, List<Pair<String, String>> materializedViews, String query) {
+            this.schemaName = schemaName;
+            this.materializedViews = materializedViews;
+            this.query = query;
         }
     }
 }
