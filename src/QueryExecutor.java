@@ -6,10 +6,7 @@ import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.tools.Planner;
-import org.apache.calcite.tools.RelConversionException;
-import org.apache.calcite.tools.RelRunner;
-import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.tools.*;
 
 import java.io.PrintWriter;
 import java.sql.PreparedStatement;
@@ -39,17 +36,17 @@ public class QueryExecutor {
         RelRoot relRoot = planner.rel(validated);
         RelNode relNode = relRoot.project();
 
+        executeRelNode(relNode);
+    }
+
+    public void executeRelNode(RelNode relNode) throws SQLException {
         if (printPlan) {
             RelWriter relWriter = new RelWriterImpl(new PrintWriter(System.out), ALL_ATTRIBUTES, false);
             relNode.explain(relWriter);
         }
 
-        executeRelNode(relNode);
-    }
-
-    public void executeRelNode(RelNode relNode) throws SQLException {
         RelRunner runner = connection.unwrap(RelRunner.class);
-        PreparedStatement run = runner.prepare(relNode);
+        PreparedStatement run = runner.prepareStatement(relNode);
         run.execute();
         ResultSet rs = run.getResultSet();
 
