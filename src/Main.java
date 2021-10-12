@@ -13,7 +13,7 @@ import java.sql.SQLException;
 
 public class Main {
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, ValidationException, SqlParseException, RelConversionException {
         Connection connection = DriverManager.getConnection("jdbc:calcite:");
         CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
 
@@ -23,12 +23,19 @@ public class Main {
 
         Configuration configuration = new Configuration(rootSchema);
         QueryExecutor executor = new QueryExecutor(calciteConnection, configuration.getPlanner());
+        executor.printPlan = true;
+//        executor.printOutput = true;
 
-        try {
-            executor.executeSql(Queries.q0);
-            executor.executeRelNode(new MVHandler(calciteConnection).getDerivedPlan("MV0", Queries.mv0, Queries.q0));
-        } catch (SqlParseException | ValidationException | RelConversionException e) {
-            e.printStackTrace();
-        }
+        MVHandler mvHandler = new MVHandler(calciteConnection, configuration.getFrameworkConfig());
+
+        long t1 = System.currentTimeMillis();
+        executor.executeSql(Queries.q2);
+        long t2 = System.currentTimeMillis();
+
+        long t3 = System.currentTimeMillis();
+        executor.executeRelNode(mvHandler.getDerivedPlan("MV2", Queries.mv2, Queries.q2));
+        long t4 = System.currentTimeMillis();
+
+        System.out.println("Normal exec: " + (t2 - t1) + "ms, MV exec: " + (t4 - t3) + " ms");
     }
 }
