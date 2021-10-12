@@ -1,5 +1,4 @@
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -13,31 +12,36 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.tools.*;
 
-import javax.sql.DataSource;
 import java.io.PrintWriter;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class CalciteHandler {
 
-    public void parseAndValidateSql() throws SQLException, SqlParseException, ValidationException, RelConversionException {
-        Connection connection = DriverManager.getConnection("jdbc:calcite:");
-        CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
+    public void parseAndValidateSql(String sql, SchemaPlus rootSchema, CalciteConnection connection) throws SQLException, SqlParseException, ValidationException, RelConversionException {
 
-        SchemaPlus rootSchema = calciteConnection.getRootSchema();
-        DataSource dataSource = JdbcSchema.dataSource("jdbc:postgresql:tpch_test", "org.postgresql.Driver", "postgres", "vasu");
-        rootSchema.add("public", JdbcSchema.create(rootSchema, "public", dataSource, null, null));
-
+        //TODO See parserconfig to set lowercase
+        // https://datacadamia.com/db/calcite/getting_started
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema(rootSchema)
                 .build();
 
-        String sql = "SELECT sum(\"l_extendedprice\" * \"l_discount\") as revenue" +
-                " FROM \"public\".\"lineitem\"" +
-                " WHERE" +
-                " \"l_shipdate\" >= date '1994-01-01'" +
-                " AND \"l_shipdate\" < date '1994-01-01' + interval '1' year" +
-                " AND \"l_discount\" between 0.06 - 0.01 AND 0.06 + 0.01" +
-                " AND \"l_quantity\" < 24";
+//        String sql = "SELECT sum(\"l_extendedprice\" * \"l_discount\") as revenue" +
+//                " FROM \"public\".\"lineitem\"" +
+//                " WHERE" +
+//                " \"l_shipdate\" >= date '1994-01-01'" +
+//                " AND \"l_shipdate\" < date '1994-01-01' + interval '1' year" +
+//                " AND \"l_discount\" between 0.06 - 0.01 AND 0.06 + 0.01" +
+//                " AND \"l_quantity\" < 24";
+
+//        String sql = "SELECT \"l_extendedprice\", \"l_discount\"" +
+//                " FROM \"public\".\"lineitem\"" +
+//                " WHERE" +
+////                " \"l_shipdate\" >= date '1994-01-01'" +
+////                " AND \"l_shipdate\" < date '1995-01-01'" +
+//                " \"l_discount\" between 0.06 - 0.01 AND 0.06 + 0.01" +
+//                " AND \"l_quantity\" < 24";
 
 
         Planner planner = Frameworks.getPlanner(config);
@@ -56,16 +60,19 @@ public class CalciteHandler {
         ResultSet rs = run.getResultSet();
 
         System.out.println("Result is");
+        int num = 0;
         while (rs.next()) {
+            num += 1;
             for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
-                System.out.print(rs.getObject(i) + ", ");
+//                System.out.print(rs.getObject(i) + ", ");
             }
-            System.out.println();
+//            System.out.println();
         }
 
+        System.out.println("Size : " + num);
         SqlWriter writer = new SqlPrettyWriter();
         validated.unparse(writer, 0, 0);
 
-        System.out.println(ImmutableList.of(writer.toSqlString().getSql()));
+//        System.out.println(ImmutableList.of(writer.toSqlString().getSql()));
     }
 }

@@ -7,7 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="apache.calcite.core" level="project" />
     <orderEntry type="library" name="postgresql1" level="project" />
+    <orderEntry type="library" name="apache.calcite.core" level="project" />
   </component>
 </module>
