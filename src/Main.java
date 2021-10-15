@@ -1,41 +1,30 @@
-import mv.MVHandler;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
-import org.apache.calcite.jdbc.CalciteConnection;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.tools.RelConversionException;
-import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.plan.RelOptMaterialization;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.util.Pair;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.io.PrintWriter;
+import java.util.List;
+
+import static org.apache.calcite.sql.SqlExplainLevel.ALL_ATTRIBUTES;
 
 public class Main {
 
-    public static void main(String[] args) throws SQLException, ValidationException, SqlParseException, RelConversionException {
-        Connection connection = DriverManager.getConnection("jdbc:calcite:");
-        CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
+    public static void main(String[] args) throws Exception {
+        Optimizer optimizer = Optimizer.create();
 
-        SchemaPlus rootSchema = calciteConnection.getRootSchema();
-        DataSource dataSource = JdbcSchema.dataSource("jdbc:postgresql:tpch_test", "org.postgresql.Driver", "postgres", "vasu");
-        rootSchema.add("public", JdbcSchema.create(rootSchema, "public", dataSource, null, null));
+        RelWriter relWriter = new RelWriterImpl(new PrintWriter(System.out), ALL_ATTRIBUTES, false);
 
-        Configuration configuration = new Configuration(rootSchema);
-        QueryExecutor executor = new QueryExecutor(calciteConnection, configuration.getPlanner());
-        executor.printPlan = true;
-//        executor.printOutput = true;
+//        optimizer.executeRelNode(optimizer.convert(optimizer.validate(optimizer.parse(Queries.q3))));
 
-        MVHandler mvHandler = new MVHandler(calciteConnection, configuration.getFrameworkConfig());
 
-        long t1 = System.currentTimeMillis();
-        executor.executeSql(Queries.q2);
-        long t2 = System.currentTimeMillis();
+//        optimizer.optimize(optimizer.getMaterializations("MV0", Queries.mv0, Queries.q0)).get(0).explain(relWriter);
+//        optimizer.executeRelNode(optimizer.optimize(optimizer.getMaterializations("MV0", Queries.mv0, Queries.q0)).get(0));
 
-        long t3 = System.currentTimeMillis();
-        executor.executeRelNode(mvHandler.getDerivedPlan("MV2", Queries.mv2, Queries.q2));
-        long t4 = System.currentTimeMillis();
-
-        System.out.println("Normal exec: " + (t2 - t1) + "ms, MV exec: " + (t4 - t3) + " ms");
+        Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("MV2", Queries.mv2, Queries.q2);
+        RelNode rr = optimizer.runrun(optimizer.optimize(m).get(0), m.right);
+        rr.explain(relWriter);
+        optimizer.executeRelNode(rr);
     }
 }
