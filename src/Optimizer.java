@@ -60,6 +60,7 @@ public class Optimizer {
     private final VolcanoPlanner planner;
     private final RelOptCluster cluster;
 
+    //TODO reorganize this class
     public Optimizer(SchemaPlus rootSchema, SchemaPlus schema, CalciteConnectionConfig config,
                      CalciteConnection connection, SqlValidator validator, SqlToRelConverter converter,
                      Prepare.CatalogReader catalogReader, VolcanoPlanner planner, RelOptCluster cluster) {
@@ -218,6 +219,7 @@ public class Optimizer {
 
         System.out.println("Successfully executed query! Row count: " + count + " Time: " + (t2 - t1) + "ms");
     }
+
 
     public RelNode runrun(RelNode relNode, List<RelOptMaterialization> materializations) {
         RuleSet rules = RuleSets.ofList(
