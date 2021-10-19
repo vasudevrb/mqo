@@ -1,3 +1,5 @@
+package mv;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
@@ -21,7 +23,6 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.logical.LogicalCalc;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -155,7 +156,11 @@ public class Optimizer {
         final MaterializationService.DefaultTableFactory tableFactory = new MaterializationService.DefaultTableFactory();
 
         final RelNode mvRel = convert(validate(parse(mv)));
+        long t1 = System.currentTimeMillis();
         final Table table = tableFactory.createTable(CalciteSchema.from(rootSchema), mv, ImmutableList.of(schema.getName()));
+        long t2 = System.currentTimeMillis();
+
+        System.out.println("Time taken to create table: " + (t2 - t1) + " ms");
         schema.add(mv_name, table);
         builder.scan(schema.getName(), mv_name);
 
@@ -200,10 +205,13 @@ public class Optimizer {
         return hepPlanner.findBestExp();
     }
 
-    public void executeRelNode(RelNode relNode) throws SQLException {
+    public void execute(RelNode relNode) throws SQLException {
         RelRunner runner = connection.unwrap(RelRunner.class);
-        long t1 = System.currentTimeMillis();
+        long t3 = System.currentTimeMillis();
         PreparedStatement run = runner.prepareStatement(relNode);
+        long t4 = System.currentTimeMillis();
+
+        long t1 = System.currentTimeMillis();
         run.execute();
         long t2 = System.currentTimeMillis();
         ResultSet rs = run.getResultSet();
@@ -217,11 +225,12 @@ public class Optimizer {
             count++;
         }
 
+        System.out.println("Compiling query took " + (t4 -t3) + " ms");
         System.out.println("Successfully executed query! Row count: " + count + " Time: " + (t2 - t1) + "ms");
     }
 
 
-    public RelNode runrun(RelNode relNode, List<RelOptMaterialization> materializations) {
+    public RelNode getPhysicalPlan(RelNode relNode, List<RelOptMaterialization> materializations) {
         RuleSet rules = RuleSets.ofList(
                 CoreRules.FILTER_TO_CALC,
                 CoreRules.PROJECT_TO_CALC,
@@ -237,5 +246,9 @@ public class Optimizer {
         Program program = Programs.of(rules);
         return program.run(planner, relNode,
                 relNode.getTraitSet().plus(EnumerableConvention.INSTANCE), materializations, Collections.emptyList());
+    }
+
+    public RelNode getPhysicalPlan(RelNode node) {
+        return getPhysicalPlan(node, Collections.emptyList());
     }
 }
