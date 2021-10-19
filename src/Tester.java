@@ -4,6 +4,7 @@ import mv.Optimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.util.Pair;
 
 import java.sql.SQLException;
@@ -33,25 +34,28 @@ public class Tester {
         String q1 = "SELECT \"l_extendedprice\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
-                " \"l_shipdate\" >= date '1994-01-01'" +
-                " AND \"l_shipdate\" < date '1994-06-01'" +
+                " \"l_shipdate\" >= date '2018-09-09'" +
+                " AND \"l_shipdate\" < date '2018-10-09'" +
                 " AND \"l_discount\" > 0.07" +
                 " AND \"l_quantity\" > 25";
 
         String q2 = "SELECT \"l_extendedprice\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
-                " \"l_shipdate\" < date '1994-01-01'" +
-                " AND \"l_quantity\" = 15" +
-                " AND \"l_discount\" > 0.06";
+                " \"l_shipdate\" > date '2019-10-01'" +
+                " AND \"l_quantity\" > 30";
 
         SqlNode sqlNode = optimizer.validate(optimizer.parse(q1));
         SqlNode sqlNode2 = optimizer.validate(optimizer.parse(q2));
 
         BatchQueryBuilder batchQueryBuilder = new BatchQueryBuilder();
 
+//        Operator op = batchQueryBuilder.build(sqlNode, sqlNode2);
+//        System.out.println(op);
+
         Operator op = batchQueryBuilder.build(sqlNode, sqlNode2);
         System.out.println(op);
+
     }
 
 }

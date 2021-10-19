@@ -2,8 +2,11 @@ package batch;
 
 import org.apache.calcite.sql.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static batch.Operator.Type.AND;
+import static batch.Operator.Type.OR;
 
 public class BatchQueryBuilder {
 
@@ -13,8 +16,8 @@ public class BatchQueryBuilder {
         this.normaliser = new Normaliser();
     }
 
-    public Operator build(SqlNode node1, SqlNode node2) {
-        Operator op = new Operator(Operator.Type.AND);
+    public Operator build2(SqlNode node1, SqlNode node2) {
+        Operator op = new Operator(AND);
 
         List<Predicate> node1Preds = extractPredicates(node1);
         List<Predicate> node2Preds = extractPredicates(node2);
@@ -25,7 +28,7 @@ public class BatchQueryBuilder {
                     continue;
                 }
 
-                Operator or1 = new Operator(Operator.Type.OR);
+                Operator or1 = new Operator(OR);
                 buildCoveringPredicate2(n1p, n2p, or1);
                 if (or1.terms.size() == 1) op.addTerm(or1.terms.get(0));
                 else if (or1.terms.size() > 1) op.addTerm(or1);
@@ -34,8 +37,49 @@ public class BatchQueryBuilder {
         return op;
     }
 
-    public Operator build(String s1, String s2) {
-        return null;
+    public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
+        String s1 = ((SqlSelect) sqlNode1).getWhere().toString();
+        String s2 =  ((SqlSelect) sqlNode2).getWhere().toString();
+
+        List<List<Predicate>> pr = extractPredicates(doOR(s1, s2));
+        pr = clean(pr);
+
+        System.out.println("AFTER");
+        System.out.println(Arrays.toString(pr.toArray()));
+
+
+        Operator opAnd = new Operator(AND);
+        for (List<Predicate> preds : pr) {
+            Operator opOr = new Operator(OR);
+            buildCoveringPredicate2(opOr, preds);
+            if (opOr.terms.size() == 1) opAnd.addTerm(opOr.terms.get(0));
+            else if (opOr.terms.size() > 1) opAnd.addTerm(opOr);
+        }
+
+        return opAnd;
+    }
+
+    private List<List<Predicate>> clean(List<List<Predicate>> pr) {
+        //Filter only those conditions that have the same name
+        for (List<Predicate> preds : pr) {
+            Iterator<Predicate> predIterator = preds.iterator();
+            String predName = "";
+            while (predIterator.hasNext()) {
+                if (predName.isEmpty()) {
+                    predName = predIterator.next().getName();
+                } else if (!predName.equals(predIterator.next().getName())) {
+                    predIterator.remove();
+                }
+            }
+        }
+
+        //Remove duplicates
+        Set<List<Predicate>> set = new HashSet<>(pr);
+        pr.clear();
+        pr.addAll(set);
+
+        //Remove lists with only 1 predicate
+        return pr.stream().filter(l -> l.size() > 1).collect(Collectors.toList());
     }
 
     private String doOR(String s1, String s2) {
@@ -64,6 +108,22 @@ public class BatchQueryBuilder {
             }
         }
         return finalStr;
+    }
+
+    public void buildCoveringPredicate2(Operator operator, List<Predicate> predicates) {
+        if (predicates.isEmpty()) return;
+
+        if (predicates.size() == 1) {
+            operator.addTerm(predicates.get(0));
+        } else if (predicates.size() == 2) {
+            buildCoveringPredicate2(predicates.get(0), predicates.get(1), operator);
+        } else {
+            operator.terms.addAll(predicates);
+        }
+    }
+
+    private <T> boolean atLeast(int num, List<T> list, int index) {
+        return list.size() > index + num + 1;
     }
 
     public void buildCoveringPredicate2(Predicate p1, Predicate p2, Operator operator) {
@@ -111,6 +171,29 @@ public class BatchQueryBuilder {
                 operator.addTerm(p2);
             }
         }
+    }
+
+    public List<List<Predicate>> extractPredicates(String s) {
+        List<List<Predicate>> predicates = new ArrayList<>();
+        for (String splitAnd : s.replaceAll("\\(", "").replaceAll("\\)", "").trim().split(" AND ")) {
+            List<Predicate> ps = new ArrayList<>();
+            for (String splitOr : splitAnd.split(" OR ")) {
+                int firstOpIndex = splitOr.contains(">=") ? splitOr.indexOf(">=")
+                        : splitOr.contains("<=") ? splitOr.indexOf("<=")
+                        : splitOr.contains("<") ? splitOr.indexOf("<")
+                        : splitOr.contains(">") ? splitOr.indexOf(">")
+                        : splitOr.indexOf("=");
+
+                if (firstOpIndex == -1) {
+                    System.out.println("Can't find index of operator in " + splitOr);
+                }
+
+                List<String> operandVal = Arrays.asList(splitOr.substring(0, firstOpIndex).trim(), splitOr.substring(firstOpIndex, firstOpIndex + 2).trim(), splitOr.substring(firstOpIndex + 2).trim());
+                ps.add(new Predicate(operandVal.get(0), operandVal.get(1), operandVal.get(2)));
+            }
+            predicates.add(ps);
+        }
+        return predicates;
     }
 
     public List<Predicate> extractPredicates(SqlNode node) {

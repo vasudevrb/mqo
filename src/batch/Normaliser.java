@@ -22,7 +22,7 @@ public class Normaliser {
     public WhereClause getBooleanRepn(String w) {
         String parsed = w;
 
-        String[] vars = StringUtils.substringsBetween(parsed, "\"", "\"");
+        String[] vars = StringUtils.substringsBetween(parsed, "`", "`");
         Map<String, String> map = new HashMap<>();
 
         for (String var : vars) {

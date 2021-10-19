@@ -1,5 +1,7 @@
 package batch;
 
+import java.util.Objects;
+
 public class Predicate extends Term implements Comparable<Predicate> {
     private String name;
     private String operator;
@@ -79,5 +81,17 @@ public class Predicate extends Term implements Comparable<Predicate> {
     @Override
     public String toString() {
         return name + " " + operator + " " + value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return toString().equals(o.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, operator, value, parsedValue);
     }
 }
