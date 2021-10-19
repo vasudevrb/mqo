@@ -17,15 +17,25 @@ public class Operator extends Term {
         this.terms.add(term);
     }
 
-    public enum Type {
-        AND, OR
+    private String buildString() {
+        List<String> strs = new ArrayList<>();
+        for (Term term : terms) {
+            if (term instanceof Operator) {
+                strs.add(((Operator) term).buildString());
+            } else if (term instanceof Predicate) {
+                strs.add(term.toString());
+            }
+        }
+        return "(" + String.join(" " + type.name() + " ", strs) + ")";
     }
 
     @Override
     public String toString() {
-        return "Operator{" +
-                "type=" + type +
-                ", terms=" + Arrays.toString(terms.toArray()) +
-                '}';
+//        return type + "(" + Arrays.toString(terms.toArray()) + ")";
+        return buildString();
+    }
+
+    public enum Type {
+        AND, OR
     }
 }

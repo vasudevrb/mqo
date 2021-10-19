@@ -27,6 +27,10 @@ public class Predicate extends Term implements Comparable<Predicate> {
         return new Predicate(predicate.getName(), predicate.getOperator(), predicate.getValue());
     }
 
+    public Predicate copyWithOp(String op) {
+        return new Predicate(name, op, value);
+    }
+
     public boolean isOperator(String op) {
         return this.getOperator().equals(op);
     }
@@ -74,10 +78,6 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
     @Override
     public String toString() {
-        return "Predicate{" +
-                "name='" + name + '\'' +
-                ", operator='" + operator + '\'' +
-                ", value='" + value + '\'' +
-                '}';
+        return name + " " + operator + " " + value;
     }
 }
