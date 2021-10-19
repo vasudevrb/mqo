@@ -36,14 +36,14 @@ public class Tester {
                 " \"l_shipdate\" >= date '1994-01-01'" +
                 " AND \"l_shipdate\" < date '1994-06-01'" +
                 " AND \"l_discount\" > 0.07" +
-                " AND \"l_quantity\" < 25";
+                " AND \"l_quantity\" > 25";
 
         String q2 = "SELECT \"l_extendedprice\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
                 " \"l_shipdate\" > date '1994-02-01'" +
-                " AND \"l_quantity\" <= 30" +
-                " AND \"l_discount\" < 0.06";
+                " AND \"l_quantity\" = 15" +
+                " AND \"l_discount\" > 0.06";
 
         SqlNode sqlNode = optimizer.validate(optimizer.parse(q1));
         SqlNode sqlNode2 = optimizer.validate(optimizer.parse(q2));

@@ -39,6 +39,13 @@ public class BatchQueryBuilder {
                     operator.addTerm(p1);
                     operator.addTerm(p2);
                 }
+            } else if (p2.isOperator("=")) {
+                if (p1.compareTo(p2) == 0) {
+                    operator.addTerm(p1.copyWithOp(">="));
+                } else {
+                    operator.addTerm(p1);
+                    operator.addTerm(p2);
+                }
             }
         } else if (p1.isOperator("<") || p1.isOperator("<=")) {
             if (p2.isOperator("<") || p2.isOperator("<=")) {
@@ -50,6 +57,20 @@ public class BatchQueryBuilder {
                     operator.addTerm(p1);
                     operator.addTerm(p2);
                 }
+            } else if (p2.isOperator("=")) {
+                if (p1.compareTo(p2) == 0) {
+                    operator.addTerm(p1.copyWithOp("<="));
+                } else {
+                    operator.addTerm(p1);
+                    operator.addTerm(p2);
+                }
+            }
+        } else if (p1.isOperator("=")) {
+            if (p1.compareTo(p2) == 0) {
+                operator.addTerm(p1.copyWithOp("="));
+            } else {
+                operator.addTerm(p1);
+                operator.addTerm(p2);
             }
         }
     }
