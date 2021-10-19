@@ -13,48 +13,13 @@ import java.util.Map;
 
 public class Normaliser {
 
-
-    public static void main(String[] args) {
-        String w = "x < 5 AND y > 10 OR (t >= 11 AND w < 15) OR x = 4";
-        String k = "\"l_shipdate\" >= date '1994-01-01'" +
-                " AND \"l_shipdate\" < date '1994-06-01'" +
-                " AND (\"l_discount\" > 0.07" +
-                " OR \"l_quantity\" < 25)" +
-                " AND \"l_name\" LIKE 'A%'";
-
-        WhereClause bk = getBooleanRepn2(k);
-//        System.out.println(Arrays.toString(StringUtils.substringsBetween(bk, "\"", "\"")));
-//        System.out.println(Arrays.toString(StringUtils.substringsBetween(k, "\"", "\"")));
-
-        Expression<String> expr = RuleSet.toCNF(ExprParser.parse(bk.booleanRepn));
-//        String cnf = expr.toString();
-
-        String cnf = "(LgdI & ROfK & pLyL & (FlNK | JVWB))";
-        String c2 = "(AqXT & oFYY & zzAA & (Bvwy | adhX))";
-        String finalStr = "";
-
-        for (String part1 : cnf.replaceAll("\\(", "").replaceAll("\\)", "").split("&")) {
-            for (String part2 : c2.replaceAll("\\(", "").replaceAll("\\)", "").split("&")) {
-                finalStr += "(" + part1 + "| " + part2 + ")";
-                finalStr += " & ";
-            }
-        }
-
-        finalStr = finalStr.substring(0, finalStr.length() - 3).replaceAll("\\|", "OR").replaceAll("&", "AND");
-        for (String splitAnd: finalStr.replaceAll("\\(", "").replaceAll("\\)", "").split(" AND ")) {
-            String[] splitOr = splitAnd.split(" OR ");
-
-        }
-
-        System.out.println(finalStr);
+    public WhereClause getCNF(WhereClause w) {
+        Expression<String> expr2 = RuleSet.toCNF(ExprParser.parse(w.booleanRepn));
+        w.booleanRepn = expr2.toString();
+        return w;
     }
 
-    public static String doOr(WhereClause w1, WhereClause w2) {
-
-        return "";
-    }
-
-    public static WhereClause getBooleanRepn2(String w) {
+    public WhereClause getBooleanRepn(String w) {
         String parsed = w;
 
         String[] vars = StringUtils.substringsBetween(parsed, "\"", "\"");
@@ -82,7 +47,7 @@ public class Normaliser {
         return new WhereClause(map, parsed.replaceAll("OR", "|").replaceAll("AND", "&"));
     }
 
-    public static String getBooleanRepn(String w) {
+    private String getBooleanRepn2(String w) {
         List<String> allowedSymbols = Arrays.asList(">=", "<=", ">", "<", "=", "LIKE");
         String parsed = w;
 
@@ -105,7 +70,7 @@ public class Normaliser {
         return parsed.replaceAll("OR", "|").replaceAll("AND", "&");
     }
 
-    private static class WhereClause {
+    static class WhereClause {
         Map<String, String> map;
         String booleanRepn;
 

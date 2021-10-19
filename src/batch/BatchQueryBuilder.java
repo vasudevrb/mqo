@@ -7,6 +7,12 @@ import java.util.List;
 
 public class BatchQueryBuilder {
 
+    private Normaliser normaliser;
+
+    public BatchQueryBuilder() {
+        this.normaliser = new Normaliser();
+    }
+
     public Operator build(SqlNode node1, SqlNode node2) {
         Operator op = new Operator(Operator.Type.AND);
 
@@ -26,6 +32,38 @@ public class BatchQueryBuilder {
             }
         }
         return op;
+    }
+
+    public Operator build(String s1, String s2) {
+        return null;
+    }
+
+    private String doOR(String s1, String s2) {
+        Normaliser.WhereClause w1 = normaliser.getCNF(normaliser.getBooleanRepn(s1));
+        Normaliser.WhereClause w2 = normaliser.getCNF(normaliser.getBooleanRepn(s2));
+
+        String cnf = w1.booleanRepn;
+        String c2 = w2.booleanRepn;
+
+        String finalStr = "";
+
+        for (String part1 : cnf.replaceAll("\\(", "").replaceAll("\\)", "").split("&")) {
+            for (String part2 : c2.replaceAll("\\(", "").replaceAll("\\)", "").split("&")) {
+                finalStr += "(" + part1 + " | " + part2 + ")";
+                finalStr += " & ";
+            }
+        }
+
+
+        finalStr = finalStr.substring(0, finalStr.length() - 3).replaceAll("\\|", "OR").replaceAll("&", "AND");
+        for (String splitAnd : finalStr.replaceAll("\\(", "").replaceAll("\\)", "").split(" AND ")) {
+            String[] splitOr = splitAnd.split(" OR ");
+            for (String orp : splitOr) {
+                String val = w1.map.get(orp.trim()) != null ? w1.map.get(orp.trim()) : w2.map.get(orp.trim());
+                finalStr = finalStr.replace(orp.trim(), val);
+            }
+        }
+        return finalStr;
     }
 
     public void buildCoveringPredicate2(Predicate p1, Predicate p2, Operator operator) {

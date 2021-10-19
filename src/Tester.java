@@ -41,7 +41,7 @@ public class Tester {
         String q2 = "SELECT \"l_extendedprice\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
-                " \"l_shipdate\" > date '1994-02-01'" +
+                " \"l_shipdate\" < date '1994-01-01'" +
                 " AND \"l_quantity\" = 15" +
                 " AND \"l_discount\" > 0.06";
 
