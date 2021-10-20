@@ -1,7 +1,6 @@
 package batch;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Operator extends Term {
@@ -31,7 +30,6 @@ public class Operator extends Term {
 
     @Override
     public String toString() {
-//        return type + "(" + Arrays.toString(terms.toArray()) + ")";
         return buildString();
     }
 

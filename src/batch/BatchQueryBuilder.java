@@ -16,27 +16,6 @@ public class BatchQueryBuilder {
         this.normaliser = new Normaliser();
     }
 
-    public Operator build2(SqlNode node1, SqlNode node2) {
-        Operator op = new Operator(AND);
-
-        List<Predicate> node1Preds = extractPredicates(node1);
-        List<Predicate> node2Preds = extractPredicates(node2);
-
-        for (Predicate n1p : node1Preds) {
-            for (Predicate n2p : node2Preds) {
-                if (!n2p.getName().equals(n1p.getName())) {
-                    continue;
-                }
-
-                Operator or1 = new Operator(OR);
-                buildCoveringPredicate2(n1p, n2p, or1);
-                if (or1.terms.size() == 1) op.addTerm(or1.terms.get(0));
-                else if (or1.terms.size() > 1) op.addTerm(or1);
-            }
-        }
-        return op;
-    }
-
     public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
         String s1 = ((SqlSelect) sqlNode1).getWhere().toString();
         String s2 =  ((SqlSelect) sqlNode2).getWhere().toString();
@@ -57,6 +36,27 @@ public class BatchQueryBuilder {
         }
 
         return opAnd;
+    }
+
+    public Operator build2(SqlNode node1, SqlNode node2) {
+        Operator op = new Operator(AND);
+
+        List<Predicate> node1Preds = extractPredicates(node1);
+        List<Predicate> node2Preds = extractPredicates(node2);
+
+        for (Predicate n1p : node1Preds) {
+            for (Predicate n2p : node2Preds) {
+                if (!n2p.getName().equals(n1p.getName())) {
+                    continue;
+                }
+
+                Operator or1 = new Operator(OR);
+                buildCoveringPredicate2(n1p, n2p, or1);
+                if (or1.terms.size() == 1) op.addTerm(or1.terms.get(0));
+                else if (or1.terms.size() > 1) op.addTerm(or1);
+            }
+        }
+        return op;
     }
 
     private List<List<Predicate>> clean(List<List<Predicate>> pr) {
