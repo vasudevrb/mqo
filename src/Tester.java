@@ -1,6 +1,7 @@
 import batch.QueryBatcher;
 import batch.Operator;
-import data.Configuration;
+import common.Configuration;
+import common.QueryValidator;
 import mv.Optimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
@@ -13,15 +14,17 @@ import java.util.List;
 public class Tester {
     private Configuration config;
     private Optimizer optimizer;
+    private QueryValidator validator;
 
     public Tester(Configuration config) throws SQLException {
         this.optimizer = new Optimizer(config);
+        this.validator = new QueryValidator(config);
         this.config = config;
     }
 
     public void testMVSubstitution() throws Exception {
         //Regular execution
-        RelNode regNode = optimizer.convert(optimizer.validate(optimizer.parse(Queries.q3)));
+        RelNode regNode = validator.getLogicalPlan(Queries.q3);
         RelNode physicalPlan = optimizer.getPhysicalPlan(regNode);
         optimizer.execute(physicalPlan);
 
@@ -47,8 +50,8 @@ public class Tester {
                 " \"l_shipdate\" > date '2019-10-01'" +
                 " AND \"l_quantity\" > 30";
 
-        SqlNode sqlNode = optimizer.validate(optimizer.parse(q1));
-        SqlNode sqlNode2 = optimizer.validate(optimizer.parse(q2));
+        SqlNode sqlNode = validator.validate(q1);
+        SqlNode sqlNode2 = validator.validate(q2);
 
         QueryBatcher queryBatcher = new QueryBatcher();
 

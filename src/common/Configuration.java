@@ -1,4 +1,4 @@
-package data;
+package common;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;

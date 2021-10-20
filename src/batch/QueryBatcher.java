@@ -15,7 +15,6 @@ import static batch.Operator.Type.OR;
 
 public class QueryBatcher {
 
-
     private Normaliser normaliser;
 
     public QueryBatcher() {

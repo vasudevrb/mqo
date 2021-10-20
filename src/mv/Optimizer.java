@@ -1,11 +1,11 @@
 package mv;
 
 import com.google.common.collect.ImmutableList;
-import data.Configuration;
+import common.Configuration;
+import common.QueryValidator;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
-import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService;
@@ -18,16 +18,11 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.*;
 import org.apache.calcite.util.Pair;
 
@@ -42,10 +37,8 @@ public class Optimizer {
     private final SchemaPlus rootSchema;
     private final SchemaPlus schema;
 
-    private final CalciteConnectionConfig config;
     private final CalciteConnection connection;
-    private final SqlValidator validator;
-    private final SqlToRelConverter converter;
+    private final QueryValidator validator;
 
     private final Prepare.CatalogReader catalogReader;
     private final VolcanoPlanner planner;
@@ -54,34 +47,12 @@ public class Optimizer {
     public Optimizer(Configuration programConfig) {
         this.rootSchema = programConfig.rootSchema;
         this.schema = programConfig.schema;
-        this.config = programConfig.config;
         this.connection = programConfig.connection;
-        this.validator = programConfig.validator;
-        this.converter = programConfig.converter;
         this.catalogReader = programConfig.catalogReader;
         this.planner = programConfig.planner;
         this.cluster = programConfig.cluster;
-    }
 
-    public SqlNode parse(String sql) throws Exception {
-        SqlParser.ConfigBuilder parserConfig = SqlParser.configBuilder();
-        parserConfig.setCaseSensitive(config.caseSensitive());
-        parserConfig.setUnquotedCasing(config.unquotedCasing());
-        parserConfig.setQuotedCasing(config.quotedCasing());
-        parserConfig.setConformance(config.conformance());
-
-        SqlParser parser = SqlParser.create(sql, parserConfig.build());
-
-        return parser.parseStmt();
-    }
-
-    public SqlNode validate(SqlNode node) {
-        return validator.validate(node);
-    }
-
-    public RelNode convert(SqlNode node) {
-        RelRoot root = converter.convertQuery(node, false, true);
-        return root.rel;
+        this.validator = new QueryValidator(programConfig);
     }
 
     public Pair<RelNode, List<RelOptMaterialization>> getMaterializations(String mv_name, String mv, String q) throws Exception {
@@ -89,7 +60,7 @@ public class Optimizer {
         final RelBuilder builder = RelFactories.LOGICAL_BUILDER.create(cluster, catalogReader);
         final MaterializationService.DefaultTableFactory tableFactory = new MaterializationService.DefaultTableFactory();
 
-        final RelNode mvRel = convert(validate(parse(mv)));
+        final RelNode mvRel = validator.getLogicalPlan(mv);
         long t1 = System.currentTimeMillis();
         final Table table = tableFactory.createTable(CalciteSchema.from(rootSchema), mv, ImmutableList.of(schema.getName()));
         long t2 = System.currentTimeMillis();
@@ -102,7 +73,7 @@ public class Optimizer {
         final EnumerableTableScan replacement = EnumerableTableScan.create(cluster, logicalTableScan.getTable());
         materializations.add(new RelOptMaterialization(replacement, mvRel, null, ImmutableList.of(schema.getName(), mv_name)));
 
-        return new Pair<>(convert(validate(parse(q))), materializations);
+        return new Pair<>(validator.getLogicalPlan(q), materializations);
     }
 
     public List<RelNode> optimize(Pair<RelNode, List<RelOptMaterialization>> mvData) {
