@@ -1,8 +1,11 @@
+import data.Configuration;
+
 public class Main {
 
 
     public static void main(String[] args) throws Exception {
-        Tester tester = new Tester();
+        Configuration config = Configuration.initialize();
+        Tester tester = new Tester(config);
 
 //        tester.testMVSubstitution();
         tester.testBatch();

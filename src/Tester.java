@@ -1,5 +1,6 @@
 import batch.QueryBatcher;
 import batch.Operator;
+import data.Configuration;
 import mv.Optimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
@@ -10,10 +11,12 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class Tester {
+    private Configuration config;
     private Optimizer optimizer;
 
-    public Tester() throws SQLException {
-        this.optimizer = Optimizer.create();
+    public Tester(Configuration config) throws SQLException {
+        this.optimizer = new Optimizer(config);
+        this.config = config;
     }
 
     public void testMVSubstitution() throws Exception {

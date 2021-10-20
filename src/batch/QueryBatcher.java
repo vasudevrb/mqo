@@ -15,10 +15,15 @@ import static batch.Operator.Type.OR;
 
 public class QueryBatcher {
 
+
     private Normaliser normaliser;
 
     public QueryBatcher() {
         this.normaliser = new Normaliser();
+    }
+
+    public List<String> batch(List<String> queries) {
+        return new ArrayList<>();
     }
 
     public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
