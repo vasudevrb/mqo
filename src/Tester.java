@@ -1,10 +1,9 @@
-import batch.BatchQueryBuilder;
+import batch.QueryBatcher;
 import batch.Operator;
 import mv.Optimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.util.Pair;
 
 import java.sql.SQLException;
@@ -48,13 +47,16 @@ public class Tester {
         SqlNode sqlNode = optimizer.validate(optimizer.parse(q1));
         SqlNode sqlNode2 = optimizer.validate(optimizer.parse(q2));
 
-        BatchQueryBuilder batchQueryBuilder = new BatchQueryBuilder();
+        QueryBatcher queryBatcher = new QueryBatcher();
 
 //        Operator op = batchQueryBuilder.build(sqlNode, sqlNode2);
 //        System.out.println(op);
 
-        Operator op = batchQueryBuilder.build(sqlNode, sqlNode2);
-        System.out.println(op);
+        long t1 = System.currentTimeMillis();
+        Operator op = queryBatcher.build(sqlNode, sqlNode2);
+        long t2 = System.currentTimeMillis();
+
+        System.out.println("Combining took " + (t2 - t1) + " ms");
 
     }
 

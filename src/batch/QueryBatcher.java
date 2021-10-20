@@ -8,11 +8,11 @@ import java.util.stream.Collectors;
 import static batch.Operator.Type.AND;
 import static batch.Operator.Type.OR;
 
-public class BatchQueryBuilder {
+public class QueryBatcher {
 
     private Normaliser normaliser;
 
-    public BatchQueryBuilder() {
+    public QueryBatcher() {
         this.normaliser = new Normaliser();
     }
 
