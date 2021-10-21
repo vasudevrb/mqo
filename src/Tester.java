@@ -65,7 +65,7 @@ public class Tester {
 //        System.out.println(op);
 
         long t1 = System.currentTimeMillis();
-        List<String> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
+        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
         long t2 = System.currentTimeMillis();
 
         System.out.println("Combined (" + combined.size() + ") are " + Arrays.toString(combined.toArray()));

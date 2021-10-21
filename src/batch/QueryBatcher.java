@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import static batch.Operator.Type.AND;
 import static batch.Operator.Type.OR;
+import static java.util.Arrays.asList;
 
 public class QueryBatcher {
 
@@ -24,7 +25,49 @@ public class QueryBatcher {
         this.validator = validator;
     }
 
-    public List<String> batch(List<String> queries) throws Exception {
+    public List<BatchQuery> batch(List<String> queries) throws Exception {
+        ArrayList<BatchQuery> batchedQueries = new ArrayList<>();
+
+        if (queries.size() == 0 || queries.size() == 1) {
+            return batchedQueries;
+        }
+
+        SqlNode n1 = validator.validate(queries.get(0));
+        SqlNode n2 = validator.validate(queries.get(1));
+        if (canMerge(n1, n2)) {
+            batchedQueries.add(new BatchQuery(getCombinedQueryString(n1, n2), asList(0, 1)));
+        } else {
+            batchedQueries.add(new BatchQuery(getQueryString(n1), asList(0)));
+            batchedQueries.add(new BatchQuery(getQueryString(n2), asList(1)));
+        }
+        int k = 2;
+
+        while (k < queries.size()) {
+            boolean added = false;
+            SqlNode n3 = validator.validate(queries.get(k));
+            for (int l = batchedQueries.size() - 1; l >= 0; l--) {
+                BatchQuery bq = batchedQueries.get(l);
+                SqlNode n4 = validator.validate(bq.query);
+                if (canMerge(n3, n4)) {
+                    added = true;
+                    batchedQueries.remove(l);
+                    bq.query = getCombinedQueryString(n3, n4);
+                    bq.indexes.add(k);
+                    batchedQueries.add(bq);
+                    break;
+                }
+            }
+
+            if (!added) {
+                batchedQueries.add(new BatchQuery(getQueryString(n3), asList(k)));
+            }
+            k++;
+        }
+
+        return batchedQueries.stream().filter(bq -> bq.indexes.size() > 1).collect(Collectors.toList());
+    }
+
+    public List<String> batch2(List<String> queries) throws Exception {
         ArrayList<String> batchedQueries = new ArrayList<>();
 
         if (queries.size() == 1) {
@@ -270,7 +313,7 @@ public class QueryBatcher {
                     System.out.println("Can't find index of operator in " + splitOr);
                 }
 
-                List<String> operandVal = Arrays.asList(splitOr.substring(0, firstOpIndex).trim(),
+                List<String> operandVal = asList(splitOr.substring(0, firstOpIndex).trim(),
                         splitOr.substring(firstOpIndex, firstOpIndex + 2).trim(),
                         splitOr.substring(firstOpIndex + 2).trim());
                 ps.add(new Predicate(operandVal.get(0), operandVal.get(1), operandVal.get(2)));
@@ -322,6 +365,24 @@ public class QueryBatcher {
         return call.operand(index).getKind().equals(SqlKind.LITERAL);
     }
 
+    public static class BatchQuery {
+        public String query;
+        public ArrayList<Integer> indexes;
+
+        public BatchQuery(String query, List<Integer> indexes) {
+            this.query = query;
+            this.indexes = new ArrayList<>(indexes);
+        }
+
+        @Override
+        public String toString() {
+            return "BatchQuery{" +
+                    "query='" + query + '\'' +
+                    ", indexes=" + Arrays.toString(indexes.toArray()) +
+                    '}';
+        }
+    }
+
     public static class Normaliser {
 
         public WhereClause getCNF(WhereClause w) {
@@ -359,7 +420,7 @@ public class QueryBatcher {
         }
 
         private String getBooleanRepn2(String w) {
-            List<String> allowedSymbols = Arrays.asList(">=", "<=", ">", "<", "=", "LIKE");
+            List<String> allowedSymbols = asList(">=", "<=", ">", "<", "=", "LIKE");
             String parsed = w;
 
             for (String symbol : allowedSymbols) {
