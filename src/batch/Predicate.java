@@ -80,7 +80,7 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
     @Override
     public String toString() {
-        return name + " " + operator + " " + value;
+        return name.replace("`", "\"") + " " + operator + " " + value;
     }
 
     @Override

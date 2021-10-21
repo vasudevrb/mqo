@@ -3,6 +3,7 @@ package batch;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
+import common.QueryValidator;
 import org.apache.calcite.sql.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -15,14 +16,76 @@ import static batch.Operator.Type.OR;
 
 public class QueryBatcher {
 
-    private Normaliser normaliser;
+    private final Normaliser normaliser;
+    private final QueryValidator validator;
 
-    public QueryBatcher() {
+    public QueryBatcher(QueryValidator validator) {
         this.normaliser = new Normaliser();
+        this.validator = validator;
     }
 
-    public List<String> batch(List<String> queries) {
-        return new ArrayList<>();
+    public List<String> batch(List<String> queries) throws Exception {
+        ArrayList<String> batchedQueries = new ArrayList<>();
+
+        if (queries.size() == 1) {
+            batchedQueries.add(queries.get(0));
+            return batchedQueries;
+        }
+
+        SqlNode n1 = validator.validate(queries.get(0));
+        SqlNode n2 = validator.validate(queries.get(1));
+        if (canMerge(n1, n2)) {
+            batchedQueries.add(getCombinedQueryString(n1, n2));
+        } else {
+            batchedQueries.add(getQueryString(n1));
+            batchedQueries.add(getQueryString(n2));
+        }
+        int k = 2;
+        //When in the batchedQueries, some new query is merged with a previous one,
+        //that previous one need to be removed. This list tracks that.
+        ArrayList<String> removable = new ArrayList<>();
+
+        while (k < queries.size()) {
+            boolean added = false;
+            SqlNode n3 = validator.validate(queries.get(k));
+            for (int l = batchedQueries.size() - 1; l >= 0; l--) {
+                SqlNode n4 = validator.validate(batchedQueries.get(l));
+                if (canMerge(n3, n4)) {
+                    added = true;
+                    batchedQueries.remove(l);
+                    batchedQueries.add(getCombinedQueryString(n3, n4));
+                    break;
+                }
+            }
+
+            if (!added) {
+                batchedQueries.add(getQueryString(n3));
+            }
+            k++;
+        }
+
+        return batchedQueries;
+    }
+
+    private String getQueryString(SqlNode n1) {
+        String query = "SELECT " + String.join(", ", selectList(n1)) + " FROM " + from(n1) + " WHERE " + where(n1);
+        return query.replaceAll("`", "\"");
+    }
+
+    private String getCombinedQueryString(SqlNode n1, SqlNode n2) {
+        List<String> select1 = selectList(n1);
+        List<String> select2 = selectList(n2);
+
+        Set<String> selectSet = new HashSet<>();
+        selectSet.addAll(select1);
+        selectSet.addAll(select2);
+
+        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + from(n1) + " WHERE " + build(n1, n2);
+        return combinedQuery.replaceAll("`", "\"");
+    }
+
+    public boolean canMerge(SqlNode node1, SqlNode node2) {
+        return from(node1).equals(from(node2));
     }
 
     public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
@@ -31,10 +94,6 @@ public class QueryBatcher {
 
         List<List<Predicate>> pr = extractPredicates(doOR(s1, s2));
         pr = clean(pr);
-
-        System.out.println("AFTER");
-        System.out.println(Arrays.toString(pr.toArray()));
-
 
         Operator opAnd = new Operator(AND);
         for (List<Predicate> preds : pr) {
@@ -45,6 +104,21 @@ public class QueryBatcher {
         }
 
         return opAnd;
+    }
+
+    public String from(SqlNode node) {
+        return ((SqlSelect) node).getFrom().toString();
+    }
+
+    public String where(SqlNode node) {
+        return ((SqlSelect) node).getWhere().toString();
+    }
+
+    public List<String> selectList(SqlNode node) {
+        return ((SqlSelect) node).getSelectList()
+                .stream()
+                .map(sl -> "\"" + sl.toString().replace(".", "\".\"") + "\"")
+                .collect(Collectors.toList());
     }
 
     public Operator build2(SqlNode node1, SqlNode node2) {

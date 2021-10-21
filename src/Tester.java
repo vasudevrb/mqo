@@ -1,5 +1,4 @@
 import batch.QueryBatcher;
-import batch.Operator;
 import common.Configuration;
 import common.QueryValidator;
 import mv.Optimizer;
@@ -9,6 +8,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 public class Tester {
@@ -47,21 +47,29 @@ public class Tester {
         String q2 = "SELECT \"l_extendedprice\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
-                " \"l_shipdate\" > date '2019-10-01'" +
+                " \"l_shipdate\" < date '2019-10-01'" +
                 " AND \"l_quantity\" > 30";
+
+        String q3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1000";
+
+        String q4 = "SELECT \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1200";
+
+        String q5 = "SELECT \"s_suppkey\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1500";
 
         SqlNode sqlNode = validator.validate(q1);
         SqlNode sqlNode2 = validator.validate(q2);
 
-        QueryBatcher queryBatcher = new QueryBatcher();
+        QueryBatcher queryBatcher = new QueryBatcher(validator);
 
 //        Operator op = batchQueryBuilder.build(sqlNode, sqlNode2);
 //        System.out.println(op);
 
         long t1 = System.currentTimeMillis();
-        Operator op = queryBatcher.build(sqlNode, sqlNode2);
+        //Figure out why the old queries are not removed from the result list
+        List<String> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
         long t2 = System.currentTimeMillis();
 
+        System.out.println("Combined (" + combined.size() + ") are " + Arrays.toString(combined.toArray()));
         System.out.println("Combining took " + (t2 - t1) + " ms");
 
     }
