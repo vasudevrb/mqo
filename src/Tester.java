@@ -65,7 +65,6 @@ public class Tester {
 //        System.out.println(op);
 
         long t1 = System.currentTimeMillis();
-        //Figure out why the old queries are not removed from the result list
         List<String> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
         long t2 = System.currentTimeMillis();
 

@@ -41,9 +41,6 @@ public class QueryBatcher {
             batchedQueries.add(getQueryString(n2));
         }
         int k = 2;
-        //When in the batchedQueries, some new query is merged with a previous one,
-        //that previous one need to be removed. This list tracks that.
-        ArrayList<String> removable = new ArrayList<>();
 
         while (k < queries.size()) {
             boolean added = false;
