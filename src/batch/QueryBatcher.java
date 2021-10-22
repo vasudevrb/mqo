@@ -8,6 +8,8 @@ import org.apache.calcite.sql.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,10 +37,10 @@ public class QueryBatcher {
         SqlNode n1 = validator.validate(queries.get(0));
         SqlNode n2 = validator.validate(queries.get(1));
         if (canMerge(n1, n2)) {
-            batchedQueries.add(new BatchQuery(getCombinedQueryString(n1, n2), asList(0, 1)));
+            batchedQueries.add(new BatchQuery(getCombinedQueryString(n1, n2), asList(0, 1), asList(n1, n2)));
         } else {
-            batchedQueries.add(new BatchQuery(getQueryString(n1), asList(0)));
-            batchedQueries.add(new BatchQuery(getQueryString(n2), asList(1)));
+            batchedQueries.add(new BatchQuery(getQueryString(n1), asList(0), asList(n1)));
+            batchedQueries.add(new BatchQuery(getQueryString(n2), asList(1), asList(n2)));
         }
         int k = 2;
 
@@ -53,13 +55,14 @@ public class QueryBatcher {
                     batchedQueries.remove(l);
                     bq.query = getCombinedQueryString(n3, n4);
                     bq.indexes.add(k);
+                    bq.parts.add(n3);
                     batchedQueries.add(bq);
                     break;
                 }
             }
 
             if (!added) {
-                batchedQueries.add(new BatchQuery(getQueryString(n3), asList(k)));
+                batchedQueries.add(new BatchQuery(getQueryString(n3), asList(k), asList(n3)));
             }
             k++;
         }
@@ -105,6 +108,20 @@ public class QueryBatcher {
         }
 
         return batchedQueries;
+    }
+
+    public void unbatchResults(BatchQuery bq, ResultSet rs) throws SQLException {
+//        while (rs.next()) {
+//            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+//                System.out.print(rs.getMetaData().getColumnName(i) + ", ");
+//            }
+//        }
+
+
+        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                System.out.print(rs.getMetaData().getColumnName(i) + ", ");
+        }
+        bq.parts.forEach(p -> System.out.println(from(p)));
     }
 
     private String getQueryString(SqlNode n1) {
@@ -371,10 +388,12 @@ public class QueryBatcher {
     public static class BatchQuery {
         public String query;
         public ArrayList<Integer> indexes;
+        public ArrayList<SqlNode> parts;
 
-        public BatchQuery(String query, List<Integer> indexes) {
+        public BatchQuery(String query, List<Integer> indexes, List<SqlNode> parts) {
             this.query = query;
             this.indexes = new ArrayList<>(indexes);
+            this.parts = new ArrayList<>(parts);
         }
 
         @Override

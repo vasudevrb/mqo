@@ -7,6 +7,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -68,6 +69,28 @@ public class Tester {
         List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
         long t2 = System.currentTimeMillis();
 
+        long t3 = System.currentTimeMillis();
+        for (String s: Arrays.asList(q3, q4, q5)) {
+            optimizer.execute(validator.getLogicalPlan(s));
+        }
+        long t4 = System.currentTimeMillis();
+
+
+
+        long t5 = System.currentTimeMillis();
+        RelNode rn = validator.getLogicalPlan(combined.get(1).query);
+
+        ResultSet rs = optimizer.executeAndGetResult(rn);
+        long t6 = System.currentTimeMillis();
+
+        long t7 = System.currentTimeMillis();
+        queryBatcher.unbatchResults(combined.get(1), rs);
+        long t8 = System.currentTimeMillis();
+
+        System.out.println("===============================");
+
+        System.out.println("Executing queries individually took " + (t4 - t3) + " ms");
+        System.out.println("Executing queries as a batch took " + (t2 - t1) + " + " + (t6 - t5)+" + " + (t8 - t7) + " = " + ((t8 - t7) + (t6 - t5) + (t2 - t1)) + " ms");
         System.out.println("Combined (" + combined.size() + ") are " + Arrays.toString(combined.toArray()));
         System.out.println("Combining took " + (t2 - t1) + " ms");
 
