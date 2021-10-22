@@ -110,28 +110,31 @@ public class Optimizer {
         return hepPlanner.findBestExp();
     }
 
-    public void execute(RelNode relNode) throws SQLException {
+    public ResultSet executeAndGetResult(RelNode relNode) throws SQLException {
         RelRunner runner = connection.unwrap(RelRunner.class);
-        long t3 = System.currentTimeMillis();
+        long t1 = System.nanoTime();
         PreparedStatement run = runner.prepareStatement(relNode);
-        long t4 = System.currentTimeMillis();
+        long t2 = System.nanoTime();
 
-        long t1 = System.currentTimeMillis();
+        long t3 = System.nanoTime();
         run.execute();
-        long t2 = System.currentTimeMillis();
-        ResultSet rs = run.getResultSet();
+        long t4 = System.nanoTime();
+
+        System.out.println("Executed query. Compile: " + (t2 - t1) + " ns, Execute: " + (t4 - t3) + " ns");
+        return run.getResultSet();
+    }
+
+    public void execute(RelNode relNode) throws SQLException {
+        ResultSet rs = executeAndGetResult(relNode);
 
         int count = 0;
         while (rs.next()) {
-//            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
 //                System.out.print(rs.getObject(i) + ", ");
-//            }
+            }
 //            System.out.println();
             count++;
         }
-
-        System.out.println("Compiling query took " + (t4 - t3) + " ms");
-        System.out.println("Successfully executed query! Row count: " + count + " Time: " + (t2 - t1) + "ms");
     }
 
 
