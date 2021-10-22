@@ -2,6 +2,7 @@ package batch;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Operator extends Term {
     public List<Term> terms;
@@ -14,6 +15,17 @@ public class Operator extends Term {
 
     public void addTerm(Term term) {
         this.terms.add(term);
+    }
+
+    public List<String> getAllPredicateNames() {
+        List<String> pNames = terms.stream()
+                .filter(t -> t instanceof Predicate)
+                .map(t -> ((Predicate) t).getName().replaceAll("`", "\""))
+                .collect(Collectors.toList());
+        terms.stream()
+                .filter(t -> t instanceof Operator)
+                .forEach(t -> pNames.addAll(((Operator) t).getAllPredicateNames()));
+        return pNames;
     }
 
     private String buildString() {

@@ -116,11 +116,14 @@ public class QueryBatcher {
         List<String> select1 = selectList(n1);
         List<String> select2 = selectList(n2);
 
+        Operator combinedWhere = build(n1, n2);
+
         Set<String> selectSet = new HashSet<>();
         selectSet.addAll(select1);
         selectSet.addAll(select2);
+        selectSet.addAll(combinedWhere.getAllPredicateNames());
 
-        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + from(n1) + " WHERE " + build(n1, n2);
+        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + from(n1) + " WHERE " + combinedWhere;
         return combinedQuery.replaceAll("`", "\"");
     }
 
