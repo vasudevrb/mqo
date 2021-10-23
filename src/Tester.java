@@ -37,19 +37,20 @@ public class Tester {
     }
 
     public void testBatch() throws Exception {
-        String q1 = "SELECT \"l_extendedprice\"" +
+        String q1 = "SELECT \"l_extendedprice\", \"l_quantity\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
-                " \"l_shipdate\" >= date '2018-09-09'" +
-                " AND \"l_shipdate\" < date '2018-10-09'" +
+                " \"l_shipdate\" >= date '1994-01-01'" +
+                " AND \"l_shipdate\" < date '1994-09-02'" +
                 " AND \"l_discount\" > 0.07" +
-                " AND \"l_quantity\" > 25";
+                " AND \"l_quantity\" > 45";
 
         String q2 = "SELECT \"l_extendedprice\"" +
                 " FROM \"public\".\"lineitem\"" +
                 " WHERE" +
-                " \"l_shipdate\" < date '2019-10-01'" +
-                " AND \"l_quantity\" > 30";
+                " \"l_shipdate\" < date '1994-06-02'" +
+                " AND \"l_shipdate\" > date '1994-01-01'" +
+                " AND \"l_quantity\" > 25";
 
         String q3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1000";
 
@@ -70,7 +71,7 @@ public class Tester {
         long t2 = System.currentTimeMillis();
 
         long t3 = System.currentTimeMillis();
-        for (String s: Arrays.asList(q3, q4, q5)) {
+        for (String s: Arrays.asList(q2)) {
             optimizer.execute(validator.getLogicalPlan(s));
         }
         long t4 = System.currentTimeMillis();
@@ -78,13 +79,13 @@ public class Tester {
 
 
         long t5 = System.currentTimeMillis();
-        RelNode rn = validator.getLogicalPlan(combined.get(1).query);
+        RelNode rn = validator.getLogicalPlan(combined.get(0).query);
 
         ResultSet rs = optimizer.executeAndGetResult(rn);
         long t6 = System.currentTimeMillis();
 
         long t7 = System.currentTimeMillis();
-        queryBatcher.unbatchResults(combined.get(1), rs);
+        queryBatcher.unbatchResults(combined.get(0), rs);
         long t8 = System.currentTimeMillis();
 
         System.out.println("===============================");

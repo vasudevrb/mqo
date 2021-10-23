@@ -135,6 +135,7 @@ public class Optimizer {
 //            System.out.println();
             count++;
         }
+        System.out.println("Count is " + count);
     }
 
 

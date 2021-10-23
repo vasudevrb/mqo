@@ -3,6 +3,7 @@ package batch;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
+import common.Evaluator;
 import common.QueryValidator;
 import org.apache.calcite.sql.*;
 import org.apache.commons.lang.StringUtils;
@@ -111,17 +112,58 @@ public class QueryBatcher {
     }
 
     public void unbatchResults(BatchQuery bq, ResultSet rs) throws SQLException {
-//        while (rs.next()) {
-//            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
-//                System.out.print(rs.getMetaData().getColumnName(i) + ", ");
-//            }
-//        }
+        SqlNode q1 = bq.parts.get(1);
+        Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(q1)));
+        String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+        List<Predicate> pr = extractPredicates(cnfString).stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
 
+        System.out.println("first query in batch is " + cnfString);
+        List<String> columnNames = new ArrayList<>();
 
-        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
-                System.out.print(rs.getMetaData().getColumnName(i) + ", ");
+        int rid = 0;
+        int count = 0;
+        while (rs.next()) {
+            rid ++;
+            if (columnNames.isEmpty()) {
+                columnNames.addAll(getColumnNames(rs));
+                System.out.println("Column names are " + Arrays.toString(columnNames.toArray()));
+            }
+            String det = cnfString.replaceAll("AND", "&").replaceAll("OR", "|");
+            for (int i = 0; i < columnNames.size(); i++) {
+                for (Predicate p : pr) {
+                    if (!columnNames.contains(p.getShortName())) {
+                        det = det.replace(p.toString(), "true");
+                        continue;
+                    }
+
+                    if (p.getShortName().equals(columnNames.get(i))) {
+                        Object val = rs.getObject(i + 1);
+                        det = det.replaceAll(p.toString(), String.valueOf(p.matches(val)));
+                    }
+
+                    if (i == columnNames.size() - 1) {
+                        det = det.replace(p.toString(), "true");
+                    }
+                }
+
+            }
+            if (Evaluator.evaluate(det)) {
+                count++;
+            }
+//            System.out.println();
         }
-        bq.parts.forEach(p -> System.out.println(from(p)));
+        System.out.println("num cols for batch " + rid);
+        System.out.println("Batch count for q1 is " + count);
+    }
+
+    private List<String> getColumnNames(ResultSet rs) throws SQLException {
+        List<String> names = new ArrayList<>();
+        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+            names.add(rs.getMetaData().getColumnName(i));
+        }
+        return names;
     }
 
     private String getQueryString(SqlNode n1) {
@@ -139,9 +181,22 @@ public class QueryBatcher {
         selectSet.addAll(select1);
         selectSet.addAll(select2);
         selectSet.addAll(combinedWhere.getAllPredicateNames());
+        selectSet.addAll(getWherePredicateNames(n1));
+        selectSet.addAll(getWherePredicateNames(n2));
 
         String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + from(n1) + " WHERE " + combinedWhere;
         return combinedQuery.replaceAll("`", "\"");
+    }
+
+    //NOTE: Where must be of a single query. Combined will not work because of flatMap
+    private List<String> getWherePredicateNames(SqlNode n) {
+        Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(n)));
+        String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+        return extractPredicates(cnfString)
+                .stream()
+                .flatMap(Collection::stream)
+                .map(Predicate::getName)
+                .collect(Collectors.toList());
     }
 
     public boolean canMerge(SqlNode node1, SqlNode node2) {
@@ -471,6 +526,15 @@ public class QueryBatcher {
             public WhereClause(Map<String, String> map, String booleanRepn) {
                 this.map = map;
                 this.booleanRepn = booleanRepn;
+            }
+
+            public String asString() {
+                String str = booleanRepn.replaceAll("\\|", "OR").replaceAll("&", "AND");
+                Set<String> keys = map.keySet();
+                for (String key : keys) {
+                    str = str.replaceAll(key, map.get(key));
+                }
+                return str;
             }
 
             @Override

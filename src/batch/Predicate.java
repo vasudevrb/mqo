@@ -8,6 +8,7 @@ public class Predicate extends Term implements Comparable<Predicate> {
     private String value;
     private int parsedValue;
 
+    private String shortName = null;
 
     public Predicate(String name, String operator, String value) {
         this.name = name;
@@ -39,6 +40,18 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
     public String getName() {
         return name;
+    }
+
+    public String getShortName() {
+        if (!name.contains(".")) {
+            return name;
+        }
+
+        return shortName == null ? buildShortName() : shortName;
+    }
+
+    private String buildShortName() {
+        return name.split("\\.")[1].replaceAll("`", "").replaceAll("\"", "");
     }
 
     @Override
@@ -76,6 +89,41 @@ public class Predicate extends Term implements Comparable<Predicate> {
             return false;
         }
         return true;
+    }
+
+    public boolean matches(int value) {
+        boolean matches = false;
+
+        if (operator.equals(">=")) matches = value >= parsedValue;
+        else if (operator.equals("<=")) matches = value <= parsedValue;
+        else if (operator.equals(">")) matches = value > parsedValue;
+        else if (operator.equals("<")) matches = value < parsedValue;
+        else if (operator.equals("=")) matches = value == parsedValue;
+
+        return matches;
+    }
+    
+    public boolean matches(float x) {
+        boolean matches = false;
+        float pVal = Float.parseFloat(this.value);
+
+        if (operator.equals(">=")) matches = x >= pVal;
+        else if (operator.equals("<=")) matches = x <= pVal;
+        else if (operator.equals(">")) matches = x > pVal;
+        else if (operator.equals("<")) matches = x < pVal;
+        else if (operator.equals("=")) matches = x == pVal;
+
+        return matches;
+    }
+
+
+    public boolean matches(Object val) {
+        if (isInt(val.toString())) return matches(Integer.parseInt(val.toString()));
+        else if (isFloat(val.toString())) return matches(Float.parseFloat(val.toString()));
+        else {
+            int val2 = Integer.parseInt(val.toString().replace("DATE", "").replace("'", "").replace("-", "").trim());
+            return matches(val2);
+        }
     }
 
     @Override
