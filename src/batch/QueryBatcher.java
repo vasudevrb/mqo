@@ -272,11 +272,11 @@ public class QueryBatcher {
     public void buildCoveringPredicate2(Predicate p1, Predicate p2, Operator operator) {
         if (p1.isOperator(">=") || p1.isOperator(">")) {
             if (p2.isOperator(">") || p2.isOperator(">=")) {
-                boolean p1Greater = p1.compareTo(p2) > 0;
+                boolean p1Greater = p1.isOperator(">=") ? p1.compareTo(p2) >= 0 : p1.compareTo(p2) > 0;
                 operator.addTerm(new Predicate(p1.getName(), p1Greater ? p1.getOperator() : p2.getOperator(),
                         p1Greater ? p2.getValue() : p1.getValue()));
             } else if (p2.isOperator("<") || p2.isOperator("<=")) {
-                boolean p1Greater = p1.compareTo(p2) > 0;
+                boolean p1Greater = p1.isOperator(">=") ? p1.compareTo(p2) >= 0 : p1.compareTo(p2) > 0;
                 if (p1Greater) {
                     operator.addTerm(p1);
                     operator.addTerm(p2);
@@ -291,11 +291,11 @@ public class QueryBatcher {
             }
         } else if (p1.isOperator("<") || p1.isOperator("<=")) {
             if (p2.isOperator("<") || p2.isOperator("<=")) {
-                boolean p1Lesser = p1.compareTo(p2) < 0;
+                boolean p1Lesser = p1.isOperator("<=") ? p1.compareTo(p2) <= 0 : p1.compareTo(p2) < 0;
                 operator.addTerm(new Predicate(p1.getName(), p1Lesser ? p2.getOperator() : p1.getOperator(),
                         p1Lesser ? p2.getValue() : p1.getValue()));
             } else if (p2.isOperator(">") || p2.isOperator(">=")) {
-                boolean p1Lesser = p1.compareTo(p2) < 0;
+                boolean p1Lesser = p1.isOperator("<=") ? p1.compareTo(p2) <= 0 : p1.compareTo(p2) < 0;
                 if (p1Lesser) {
                     operator.addTerm(p1);
                     operator.addTerm(p2);
