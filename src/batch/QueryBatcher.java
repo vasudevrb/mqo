@@ -112,50 +112,54 @@ public class QueryBatcher {
     }
 
     public void unbatchResults(BatchQuery bq, ResultSet rs) throws SQLException {
-        SqlNode q1 = bq.parts.get(1);
-        Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(q1)));
-        String cnfString = cnfQ1.asString().replaceAll("`", "\"");
-        List<Predicate> pr = extractPredicates(cnfString).stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+        ArrayList<String> cnfs = new ArrayList<>();
+        List<List<Predicate>> preds = new ArrayList<>();
 
-        System.out.println("first query in batch is " + cnfString);
-        List<String> columnNames = new ArrayList<>();
+        for (SqlNode node : bq.parts) {
+            Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(node)));
+            String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+            cnfs.add(cnfString);
+            preds.add(extractPredicates(cnfString).stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()));
+        }
 
-        int rid = 0;
-        int count = 0;
+        List<String> columnNames = getColumnNames(rs);
+
+        int[] counts = new int[preds.size()];
         while (rs.next()) {
-            rid ++;
-            if (columnNames.isEmpty()) {
-                columnNames.addAll(getColumnNames(rs));
-                System.out.println("Column names are " + Arrays.toString(columnNames.toArray()));
+            String[] dets = new String[cnfs.size()];
+            for (int i = 0; i < dets.length; i++) {
+                dets[i] = cnfs.get(i).replaceAll("AND", "&").replaceAll("OR", "|");
             }
-            String det = cnfString.replaceAll("AND", "&").replaceAll("OR", "|");
+
             for (int i = 0; i < columnNames.size(); i++) {
-                for (Predicate p : pr) {
-                    if (!columnNames.contains(p.getShortName())) {
-                        det = det.replace(p.toString(), "true");
-                        continue;
-                    }
+                for (int k = 0; k < preds.size(); k++) {
+                    for (Predicate p : preds.get(k)) {
+                        if (p.getShortName().equals(columnNames.get(i))) {
+                            Object val = rs.getObject(i + 1);
+                            dets[k] = dets[k].replaceAll(p.toString(), String.valueOf(p.matches(val)));
+                        }
 
-                    if (p.getShortName().equals(columnNames.get(i))) {
-                        Object val = rs.getObject(i + 1);
-                        det = det.replaceAll(p.toString(), String.valueOf(p.matches(val)));
-                    }
-
-                    if (i == columnNames.size() - 1) {
-                        det = det.replace(p.toString(), "true");
+                        if (i == columnNames.size() - 1) {
+                            dets[k] = dets[k].replace(p.toString(), "true");
+                        }
                     }
                 }
 
             }
-            if (Evaluator.evaluate(det)) {
-                count++;
+
+            for (int i = 0; i < dets.length; i++) {
+                if (Evaluator.evaluate(dets[i])) {
+                    counts[i] += 1;
+                }
             }
-//            System.out.println();
         }
-        System.out.println("num cols for batch " + rid);
-        System.out.println("Batch count for q1 is " + count);
+        System.out.println("Unbatched row count is " + Arrays.toString(counts));
+    }
+
+    private void unbatch(SqlNode node, ResultSet rs) {
+
     }
 
     private List<String> getColumnNames(ResultSet rs) throws SQLException {

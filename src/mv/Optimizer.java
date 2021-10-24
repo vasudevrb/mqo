@@ -120,7 +120,7 @@ public class Optimizer {
         run.execute();
         long t4 = System.nanoTime();
 
-        System.out.println("Executed query. Compile: " + (t2 - t1) + " ns, Execute: " + (t4 - t3) + " ns");
+        System.out.println("Executed query. Compile: " + (t2 - t1)/1000000 + " ms, Execute: " + (t4 - t3)/1000000 + " ms");
         return run.getResultSet();
     }
 
