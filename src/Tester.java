@@ -80,17 +80,17 @@ public class Tester {
             long t6 = System.currentTimeMillis();
 
             long t7 = System.currentTimeMillis();
-            queryBatcher.unbatchResults(bq, rs);
+            queryBatcher.unbatchResults2(bq, rs);
             long t8 = System.currentTimeMillis();
 
             times.add(Arrays.asList(t6 - t5, t8 - t7));
         }
 
 
-//        long exec_times = times.get(0).get(0) + times.get(1).get(0);
-//        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
-        long exec_times = times.get(0).get(0);
-        long unbatch_times = times.get(0).get(1);
+        long exec_times = times.get(0).get(0) + times.get(1).get(0);
+        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
+//        long exec_times = times.get(0).get(0);
+//        long unbatch_times = times.get(0).get(1);
 
         System.out.println("===============================");
 

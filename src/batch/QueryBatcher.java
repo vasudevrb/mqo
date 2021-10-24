@@ -158,8 +158,62 @@ public class QueryBatcher {
         System.out.println("Unbatched row count is " + Arrays.toString(counts));
     }
 
-    private void unbatch(SqlNode node, ResultSet rs) {
+    public void unbatchResults2(BatchQuery bq, ResultSet rs) throws SQLException {
+        ArrayList<String> cnfs = new ArrayList<>();
+        List<List<Predicate>> preds = new ArrayList<>();
+        for (SqlNode node : bq.parts) {
+            Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(node)));
+            String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+            cnfs.add(cnfString);
+            preds.add(extractPredicates(cnfString).stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()));
+        }
 
+        List<String> columnNames = getColumnNames(rs);
+        List<List<Object>> table = new ArrayList<>();
+        while (rs.next()) {
+            List<Object> row = new ArrayList<>();
+            for (int i = 0; i < columnNames.size(); i++) {
+                row.add(rs.getObject(i + 1));
+            }
+            table.add(row);
+        }
+
+        String[] dets_all = new String[cnfs.size()];
+        for (int i = 0; i < dets_all.length; i++) {
+            dets_all[i] = cnfs.get(i);
+            dets_all[i] = StringUtils.replace(dets_all[i], "AND", "&");
+            dets_all[i] = StringUtils.replace(dets_all[i], "OR", "|");
+        }
+
+        int[] counts = new int[preds.size()];
+        for (List<Object> row : table) {
+            String[] dets = dets_all.clone();
+
+            for (int i = 0; i < columnNames.size(); i++) {
+                for (int k = 0; k < preds.size(); k++) {
+                    for (Predicate p : preds.get(k)) {
+                        if (p.getShortName().equals(columnNames.get(i))) {
+                            Object val = row.get(i);
+                            dets[k] = StringUtils.replace(dets[k], p.toString(), String.valueOf(p.matches(val)));
+                        }
+
+                        if (i == columnNames.size() - 1) {
+                            dets[k] = StringUtils.replace(dets[k], p.toString(), "true");
+                        }
+                    }
+                }
+
+            }
+
+            for (int i = 0; i < dets.length; i++) {
+                if (Evaluator.evaluate(dets[i])) {
+                    counts[i] += 1;
+                }
+            }
+        }
+        System.out.println("Unbatched row count is " + Arrays.toString(counts));
     }
 
     private List<String> getColumnNames(ResultSet rs) throws SQLException {

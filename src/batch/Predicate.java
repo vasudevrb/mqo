@@ -1,5 +1,7 @@
 package batch;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.Objects;
 
 public class Predicate extends Term implements Comparable<Predicate> {
@@ -121,7 +123,7 @@ public class Predicate extends Term implements Comparable<Predicate> {
         if (isInt(val.toString())) return matches(Integer.parseInt(val.toString()));
         else if (isFloat(val.toString())) return matches(Float.parseFloat(val.toString()));
         else {
-            int val2 = Integer.parseInt(val.toString().replace("DATE", "").replace("'", "").replace("-", "").trim());
+            int val2 = Integer.parseInt(StringUtils.replace(val.toString(), "-", "").trim());
             return matches(val2);
         }
     }
