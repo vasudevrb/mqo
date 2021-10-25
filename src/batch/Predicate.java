@@ -1,5 +1,6 @@
 package batch;
 
+import common.Utils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Objects;
@@ -11,16 +12,25 @@ public class Predicate extends Term implements Comparable<Predicate> {
     private int parsedValue;
 
     private String shortName = null;
+    private String unquotedName = null;
+
+    private boolean isInt;
+    private boolean isFloat;
 
     public Predicate(String name, String operator, String value) {
         this.name = name;
         this.operator = operator;
         this.value = value;
 
+        this.unquotedName = StringUtils.replace(name, "`", "");
+        this.unquotedName = StringUtils.replace(unquotedName, "\"", "");
+
         if (value.startsWith("DATE")) {
             parsedValue = Integer.parseInt(value.replace("DATE", "").replace("'", "").replace("-", "").trim());
         } else if (isInt(value)) {
             parsedValue = Integer.parseInt(value);
+        } else if (isFloat(value)) {
+            isFloat = true;
         }
     }
 
@@ -60,7 +70,7 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
     @Override
     public int compareTo(Predicate predicate) {
-        return isFloat(value)
+        return isFloat
                 ? Float.compare(Float.parseFloat(value), Float.parseFloat(predicate.value))
                 : Integer.compare(this.parsedValue, predicate.parsedValue);
     }
@@ -78,21 +88,18 @@ public class Predicate extends Term implements Comparable<Predicate> {
     }
 
     private boolean isInt(String val) {
-        try {
-            Integer.parseInt(val);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        return true;
+        isInt = Utils.isInt(val);
+        return isInt;
     }
 
     private boolean isFloat(String val) {
         try {
             Float.parseFloat(val);
+            isFloat = true;
         } catch (NumberFormatException e) {
-            return false;
+            isFloat = false;
         }
-        return true;
+        return isFloat;
     }
 
     public boolean matches(int value) {
@@ -122,8 +129,8 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
 
     public boolean matches(Object val) {
-        if (isInt(val.toString())) return matches(Integer.parseInt(val.toString()));
-        else if (isFloat(val.toString())) return matches(Float.parseFloat(val.toString()));
+        if (Utils.isInt(val.toString())) return matches(Integer.parseInt(val.toString()));
+        else if (Utils.isFloat(val.toString())) return matches(Float.parseFloat(val.toString()));
         else {
             int val2 = Integer.parseInt(StringUtils.replace(val.toString(), "-", "").trim());
             return matches(val2);
@@ -132,7 +139,7 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
     @Override
     public String toString() {
-        return name.replace("`", "\"") + " " + operator + " " + value;
+        return unquotedName + " " + operator + " " + value;
     }
 
     @Override

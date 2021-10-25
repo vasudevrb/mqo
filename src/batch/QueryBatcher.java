@@ -677,10 +677,10 @@ public class QueryBatcher {
             }
 
             public String asString() {
-                String str = booleanRepn.replaceAll("\\|", "OR").replaceAll("&", "AND");
+                String str = booleanRepn.replace("|", "OR").replace("&", "AND");
                 Set<String> keys = map.keySet();
                 for (String key : keys) {
-                    str = str.replaceAll(key, map.get(key));
+                    str = str.replace(key, map.get(key));
                 }
                 return str;
             }
