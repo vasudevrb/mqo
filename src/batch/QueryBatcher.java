@@ -251,14 +251,21 @@ public class QueryBatcher {
 
     public void unbatchResults3(BatchQuery bq, ResultSet rs) throws SQLException {
         ArrayList<String> cnfs = new ArrayList<>();
+        List<Map<String, String>> varMap = new ArrayList<>();
         List<List<Predicate>> preds = new ArrayList<>();
         for (SqlNode node : bq.parts) {
             Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(node)));
-            String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+            String cnfString = cnfQ1.booleanRepn;
             cnfs.add(cnfString);
-            preds.add(extractPredicates(cnfString).stream()
+            varMap.add(cnfQ1.getCleanMap());
+            preds.add(extractPredicates(cnfQ1.asString().replace("`", "")).stream()
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList()));
+        }
+
+
+        for (int i = 0; i < varMap.size(); i++) {
+            varMap.set(i, inverseMap(varMap.get(i)));
         }
 
         List<String> columnNames = getColumnNames(rs);
@@ -271,31 +278,70 @@ public class QueryBatcher {
         }
 
         String[] dets_all = new String[cnfs.size()];
-        for (int i = 0; i < dets_all.length; i++) {
+        for (int i = 0; i < cnfs.size(); i++) {
             dets_all[i] = cnfs.get(i);
-            dets_all[i] = StringUtils.replace(dets_all[i], "AND", "&");
-            dets_all[i] = StringUtils.replace(dets_all[i], "OR", "|");
+            dets_all[i] = StringUtils.replace(dets_all[i], "&", "&&");
+            dets_all[i] = StringUtils.replace(dets_all[i], "|", "||");
         }
 
-        for (int i = 0; i < table.size(); i++) {
-            final int colIndex = i;
-            String colName = columnNames.get(i);
+        evaluator.set(dets_all);
 
-            for (List<Predicate> prs : preds) {
-                List<List<Boolean>> bools = new ArrayList<>();
-                prs.parallelStream()
-                        .filter(pr -> pr.getShortName().equals(colName))
-                        .map(pr -> table.get(colIndex).parallelStream().map(pr::matches).collect(Collectors.toList()))
-                        .forEach(bools::add);
-//                for (Predicate pr : prs) {
-//                    if (pr.getShortName().equals(colName)) {
-//                        bools.add(table.get(i).parallelStream().map(x -> pr.matches(x)).collect(Collectors.toList()));
-//                    }
-//                }
+        List<List<String>> tabInfo = Collections.synchronizedList(new ArrayList<>());
+        List<List<List<Boolean>>> tb = new ArrayList<>();
+        for (List<Predicate> prs : preds) {
 
+            List<String> colInfo = new ArrayList<>();
+            for (Predicate pr: prs) {
+                colInfo.add(varMap.stream().filter(x -> x.containsKey(pr.toString())).findFirst().get().get(pr.toString()));
+            }
+            tabInfo.add(colInfo);
 
+            List<List<Boolean>> colBools = Collections.synchronizedList(new ArrayList<>());
+            prs.parallelStream()
+                    .filter(pr -> columnNames.contains(pr.getShortName()))
+                    .map(pr -> table.get(columnNames.indexOf(pr.getShortName())).parallelStream().map(pr::matches).collect(Collectors.toList()))
+                    .forEach(colBools::add);
+
+            tb.add(colBools);
+        }
+
+        int[] count = new int[cnfs.size()];
+
+        final MapContext context = new MapContext();
+
+        for (int i = 0; i < tb.size(); i++) {
+            List<String> tInfo = tabInfo.get(i);
+            List<List<Boolean>> tl = tb.get(i);
+
+            for (int j = 0; j < tl.get(0).size(); j++) {
+                for (int k = 0; k < tl.size(); k++) {
+                    context.set(tInfo.get(k), tl.get(k).get(j));
+                }
+
+                if (evaluator.evaluate2(i, context)) {
+                    count[i] += 1;
+                }
             }
         }
+
+        System.out.println("Unbatched row count is " + Arrays.toString(count));
+
+
+//        IntStream.range(0, tb.size())
+//                .boxed()
+//                .map(i -> {
+//                    List<String> tInfo = tabInfo.get(i);
+//                    List<List<Boolean>> tl = tb.get(i);
+//
+//                    IntStream.range(0, tl.size())
+//                            .boxed()
+//                            .map(j -> {
+//                                IntStream.range(0, tl.get(0).size())
+//                                        .boxed()
+//                                        .peek(k -> context.set(tInfo.get(j), tl.get(j).get(k)))
+//                                        .map(k -> evaluator.evaluate2(i, context))
+//                            })
+//                })
     }
 
     private List<String> getColumnNames(ResultSet rs) throws SQLException {
