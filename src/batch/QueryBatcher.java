@@ -6,6 +6,8 @@ import com.bpodgursky.jbool_expressions.rules.RuleSet;
 import common.Evaluator;
 import common.QueryValidator;
 import org.apache.calcite.sql.*;
+import org.apache.commons.jexl3.JexlContext;
+import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -23,10 +25,12 @@ public class QueryBatcher {
 
     private final Normaliser normaliser;
     private final QueryValidator validator;
+    private final Evaluator evaluator;
 
     public QueryBatcher(QueryValidator validator) {
         this.normaliser = new Normaliser();
         this.validator = validator;
+        this.evaluator = new Evaluator();
     }
 
     public List<BatchQuery> batch(List<String> queries) throws Exception {
@@ -159,16 +163,30 @@ public class QueryBatcher {
         System.out.println("Unbatched row count is " + Arrays.toString(counts));
     }
 
+    public static <K, V> Map<V, K> inverseMap(Map<K, V> sourceMap) {
+        return sourceMap.entrySet().stream().collect(
+                Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey,
+                        (a, b) -> a) //if sourceMap has duplicate values, keep only first
+        );
+    }
+
     public void unbatchResults2(BatchQuery bq, ResultSet rs) throws SQLException {
         ArrayList<String> cnfs = new ArrayList<>();
+        List<Map<String, String>> varMap = new ArrayList<>();
         List<List<Predicate>> preds = new ArrayList<>();
         for (SqlNode node : bq.parts) {
             Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(node)));
-            String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+            String cnfString = cnfQ1.booleanRepn;
             cnfs.add(cnfString);
-            preds.add(extractPredicates(cnfString).stream()
+            varMap.add(cnfQ1.getCleanMap());
+            preds.add(extractPredicates(cnfQ1.asString().replace("`", "")).stream()
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList()));
+        }
+
+
+        for (int i=0; i < varMap.size(); i++) {
+            varMap.set(i, inverseMap(varMap.get(i)));
         }
 
         List<String> columnNames = getColumnNames(rs);
@@ -182,19 +200,22 @@ public class QueryBatcher {
         }
 
         String[] dets_all = new String[cnfs.size()];
-        for (int i = 0; i < dets_all.length; i++) {
+        for (int i = 0; i < cnfs.size(); i++) {
             dets_all[i] = cnfs.get(i);
-            dets_all[i] = StringUtils.replace(dets_all[i], "AND", "&");
-            dets_all[i] = StringUtils.replace(dets_all[i], "OR", "|");
+            dets_all[i] = StringUtils.replace(dets_all[i], "&", "&&");
+            dets_all[i] = StringUtils.replace(dets_all[i], "|", "||");
         }
+        evaluator.set(dets_all);
+        MapContext context = new MapContext();
+
 
         AtomicInteger[] counts = new AtomicInteger[preds.size()];
         for (int i = 0; i < counts.length; i++) {
             counts[i] = new AtomicInteger(0);
         }
 
-        table.parallelStream()
-                .map(r -> processRow(dets_all, r, columnNames, preds))
+        table.stream()
+                .map(r -> processRow(varMap, r, columnNames, preds, context))
                 .forEach(cn -> {
                     for (int i = 0; i < cn.length; i++) {
                         if (cn[i] == 1) counts[i].incrementAndGet();
@@ -204,31 +225,35 @@ public class QueryBatcher {
         System.out.println("Unbatched row count is " + Arrays.toString(counts));
     }
 
-    private int[] processRow(String[] dets_all, List<Object> row, List<String> columnNames, List<List<Predicate>> preds) {
-        String[] dets = dets_all.clone();
-        int[] counts = new int[dets.length];
+    private int[] processRow(List<Map<String, String>> maps, List<Object> row, List<String> columnNames,
+                             List<List<Predicate>> preds, MapContext context) {
+        int[] counts = new int[maps.size()];
 
         for (int i = 0; i < columnNames.size(); i++) {
             for (int k = 0; k < preds.size(); k++) {
+                Map<String, String> map = maps.get(k);
                 for (Predicate p : preds.get(k)) {
+                    String key = map.get(p.toString());
                     if (p.getShortName().equals(columnNames.get(i))) {
                         Object val = row.get(i);
-                        dets[k] = StringUtils.replace(dets[k], p.toString(), String.valueOf(p.matches(val)));
+                        context.set(key, String.valueOf(p.matches(val)));
                     }
 
-                    if (i == columnNames.size() - 1) {
-                        dets[k] = StringUtils.replace(dets[k], p.toString(), "true");
+                    if (i == columnNames.size() - 1 && !context.has(key)) {
+                        context.set(key, "true");
+
                     }
                 }
             }
 
         }
 
-        for (int i = 0; i < dets.length; i++) {
-            if (Evaluator.evaluate(dets[i])) {
+        for (int i = 0; i < counts.length; i++) {
+            if (evaluator.evaluate2(i, context)) {
                 counts[i] += 1;
             }
         }
+        context.clear();
         return counts;
     }
 
@@ -658,6 +683,15 @@ public class QueryBatcher {
                     str = str.replaceAll(key, map.get(key));
                 }
                 return str;
+            }
+
+            public Map<String, String> getCleanMap() {
+                Map<String, String> newMap = new HashMap<>();
+                for (String key : map.keySet()) {
+                    String newVal = StringUtils.replace(map.get(key), "`", "");
+                    newMap.put(key, newVal);
+                }
+                return newMap;
             }
 
             @Override

@@ -53,7 +53,9 @@ public class Predicate extends Term implements Comparable<Predicate> {
     }
 
     private String buildShortName() {
-        return name.split("\\.")[1].replaceAll("`", "").replaceAll("\"", "");
+        shortName = StringUtils.replace(StringUtils.split(name, ".")[1], "`", "");
+        shortName = StringUtils.replace(shortName, "\"", "");
+        return shortName;
     }
 
     @Override
