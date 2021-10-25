@@ -6,7 +6,6 @@ import com.bpodgursky.jbool_expressions.rules.RuleSet;
 import common.Evaluator;
 import common.QueryValidator;
 import org.apache.calcite.sql.*;
-import org.apache.commons.jexl3.JexlContext;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -31,6 +30,13 @@ public class QueryBatcher {
         this.normaliser = new Normaliser();
         this.validator = validator;
         this.evaluator = new Evaluator();
+    }
+
+    public static <K, V> Map<V, K> inverseMap(Map<K, V> sourceMap) {
+        return sourceMap.entrySet().stream().collect(
+                Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey,
+                        (a, b) -> a) //if sourceMap has duplicate values, keep only first
+        );
     }
 
     public List<BatchQuery> batch(List<String> queries) throws Exception {
@@ -163,13 +169,6 @@ public class QueryBatcher {
         System.out.println("Unbatched row count is " + Arrays.toString(counts));
     }
 
-    public static <K, V> Map<V, K> inverseMap(Map<K, V> sourceMap) {
-        return sourceMap.entrySet().stream().collect(
-                Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey,
-                        (a, b) -> a) //if sourceMap has duplicate values, keep only first
-        );
-    }
-
     public void unbatchResults2(BatchQuery bq, ResultSet rs) throws SQLException {
         ArrayList<String> cnfs = new ArrayList<>();
         List<Map<String, String>> varMap = new ArrayList<>();
@@ -185,7 +184,7 @@ public class QueryBatcher {
         }
 
 
-        for (int i=0; i < varMap.size(); i++) {
+        for (int i = 0; i < varMap.size(); i++) {
             varMap.set(i, inverseMap(varMap.get(i)));
         }
 
@@ -215,19 +214,13 @@ public class QueryBatcher {
         }
 
         table.stream()
-                .map(r -> processRow(varMap, r, columnNames, preds, context))
-                .forEach(cn -> {
-                    for (int i = 0; i < cn.length; i++) {
-                        if (cn[i] == 1) counts[i].incrementAndGet();
-                    }
-                });
+                .forEach(r -> processRow(varMap, r, columnNames, preds, context, counts));
 
         System.out.println("Unbatched row count is " + Arrays.toString(counts));
     }
 
-    private int[] processRow(List<Map<String, String>> maps, List<Object> row, List<String> columnNames,
-                             List<List<Predicate>> preds, MapContext context) {
-        int[] counts = new int[maps.size()];
+    private void processRow(List<Map<String, String>> maps, List<Object> row, List<String> columnNames,
+                            List<List<Predicate>> preds, MapContext context, AtomicInteger[] counts) {
 
         for (int i = 0; i < columnNames.size(); i++) {
             for (int k = 0; k < preds.size(); k++) {
@@ -250,11 +243,10 @@ public class QueryBatcher {
 
         for (int i = 0; i < counts.length; i++) {
             if (evaluator.evaluate2(i, context)) {
-                counts[i] += 1;
+                counts[i].incrementAndGet();
             }
         }
         context.clear();
-        return counts;
     }
 
     public void unbatchResults3(BatchQuery bq, ResultSet rs) throws SQLException {
