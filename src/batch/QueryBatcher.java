@@ -12,6 +12,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static batch.Operator.Type.AND;
@@ -187,33 +188,97 @@ public class QueryBatcher {
             dets_all[i] = StringUtils.replace(dets_all[i], "OR", "|");
         }
 
-        int[] counts = new int[preds.size()];
-        for (List<Object> row : table) {
-            String[] dets = dets_all.clone();
+        AtomicInteger[] counts = new AtomicInteger[preds.size()];
+        for (int i = 0; i < counts.length; i++) {
+            counts[i] = new AtomicInteger(0);
+        }
 
-            for (int i = 0; i < columnNames.size(); i++) {
-                for (int k = 0; k < preds.size(); k++) {
-                    for (Predicate p : preds.get(k)) {
-                        if (p.getShortName().equals(columnNames.get(i))) {
-                            Object val = row.get(i);
-                            dets[k] = StringUtils.replace(dets[k], p.toString(), String.valueOf(p.matches(val)));
-                        }
+        table.parallelStream()
+                .map(r -> processRow(dets_all, r, columnNames, preds))
+                .forEach(cn -> {
+                    for (int i = 0; i < cn.length; i++) {
+                        if (cn[i] == 1) counts[i].incrementAndGet();
+                    }
+                });
 
-                        if (i == columnNames.size() - 1) {
-                            dets[k] = StringUtils.replace(dets[k], p.toString(), "true");
-                        }
+        System.out.println("Unbatched row count is " + Arrays.toString(counts));
+    }
+
+    private int[] processRow(String[] dets_all, List<Object> row, List<String> columnNames, List<List<Predicate>> preds) {
+        String[] dets = dets_all.clone();
+        int[] counts = new int[dets.length];
+
+        for (int i = 0; i < columnNames.size(); i++) {
+            for (int k = 0; k < preds.size(); k++) {
+                for (Predicate p : preds.get(k)) {
+                    if (p.getShortName().equals(columnNames.get(i))) {
+                        Object val = row.get(i);
+                        dets[k] = StringUtils.replace(dets[k], p.toString(), String.valueOf(p.matches(val)));
+                    }
+
+                    if (i == columnNames.size() - 1) {
+                        dets[k] = StringUtils.replace(dets[k], p.toString(), "true");
                     }
                 }
-
             }
 
-            for (int i = 0; i < dets.length; i++) {
-                if (Evaluator.evaluate(dets[i])) {
-                    counts[i] += 1;
-                }
+        }
+
+        for (int i = 0; i < dets.length; i++) {
+            if (Evaluator.evaluate(dets[i])) {
+                counts[i] += 1;
             }
         }
-        System.out.println("Unbatched row count is " + Arrays.toString(counts));
+        return counts;
+    }
+
+    public void unbatchResults3(BatchQuery bq, ResultSet rs) throws SQLException {
+        ArrayList<String> cnfs = new ArrayList<>();
+        List<List<Predicate>> preds = new ArrayList<>();
+        for (SqlNode node : bq.parts) {
+            Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(node)));
+            String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+            cnfs.add(cnfString);
+            preds.add(extractPredicates(cnfString).stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList()));
+        }
+
+        List<String> columnNames = getColumnNames(rs);
+        List<List<Object>> table = new ArrayList<>();
+        columnNames.forEach(cn -> table.add(new ArrayList<>()));
+        while (rs.next()) {
+            for (int i = 0; i < columnNames.size(); i++) {
+                table.get(i).add(rs.getObject(i + 1));
+            }
+        }
+
+        String[] dets_all = new String[cnfs.size()];
+        for (int i = 0; i < dets_all.length; i++) {
+            dets_all[i] = cnfs.get(i);
+            dets_all[i] = StringUtils.replace(dets_all[i], "AND", "&");
+            dets_all[i] = StringUtils.replace(dets_all[i], "OR", "|");
+        }
+
+        for (int i = 0; i < table.size(); i++) {
+            final int colIndex = i;
+            String colName = columnNames.get(i);
+
+            for (List<Predicate> prs : preds) {
+                List<List<Boolean>> bools = new ArrayList<>();
+                prs.parallelStream()
+                        .filter(pr -> pr.getShortName().equals(colName))
+                        .map(pr -> table.get(colIndex).parallelStream().map(pr::matches).collect(Collectors.toList()))
+                        .forEach(bools::add);
+//                for (Predicate pr : prs) {
+//                    if (pr.getShortName().equals(colName)) {
+//                        bools.add(table.get(i).parallelStream().map(x -> pr.matches(x)).collect(Collectors.toList()));
+//                    }
+//                }
+
+
+            }
+        }
     }
 
     private List<String> getColumnNames(ResultSet rs) throws SQLException {

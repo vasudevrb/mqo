@@ -80,7 +80,7 @@ public class Tester {
             long t6 = System.currentTimeMillis();
 
             long t7 = System.currentTimeMillis();
-            queryBatcher.unbatchResults2(bq, rs);
+            queryBatcher.unbatchResults3(bq, rs);
             long t8 = System.currentTimeMillis();
 
             times.add(Arrays.asList(t6 - t5, t8 - t7));
