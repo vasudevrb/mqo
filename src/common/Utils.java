@@ -2,6 +2,8 @@ package common;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Random;
+
 public class Utils {
 
     public static boolean isInt(String val) {
@@ -30,6 +32,17 @@ public class Utils {
             }
         }
         return true;
+    }
+
+    static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
+    static long seed = 14124987135L;
+    static Random rnd = new Random(seed);
+
+    public static String randomString(int len){
+        StringBuilder sb = new StringBuilder(len);
+        for(int i = 0; i < len; i++)
+            sb.append(AB.charAt(rnd.nextInt(AB.length())));
+        return sb.toString();
     }
 
     public static void main(String[] args) {
