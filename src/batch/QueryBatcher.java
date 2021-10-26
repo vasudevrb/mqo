@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static batch.Operator.Type.AND;
 import static batch.Operator.Type.OR;
@@ -324,24 +325,28 @@ public class QueryBatcher {
             }
         }
 
-        System.out.println("Unbatched row count is " + Arrays.toString(count));
-
-
 //        IntStream.range(0, tb.size())
+//                .parallel()
 //                .boxed()
-//                .map(i -> {
+//                .forEach(i -> {
 //                    List<String> tInfo = tabInfo.get(i);
 //                    List<List<Boolean>> tl = tb.get(i);
 //
-//                    IntStream.range(0, tl.size())
+//                    IntStream.range(0, tl.get(0).size())
+//                            .parallel()
 //                            .boxed()
-//                            .map(j -> {
-//                                IntStream.range(0, tl.get(0).size())
+//                            .peek(j -> {
+//                                IntStream.range(0, tl.size())
 //                                        .boxed()
-//                                        .peek(k -> context.set(tInfo.get(j), tl.get(j).get(k)))
-//                                        .map(k -> evaluator.evaluate2(i, context))
+//                                        .forEach(k -> context.set(tInfo.get(k), tl.get(k).get(j)));
 //                            })
-//                })
+//                            .map(j -> evaluator.evaluate2(i, context))
+//                            .forEach(x -> {
+//                                if(x) count[i] += 1;
+//                            });
+//                });
+
+        System.out.println("Unbatched row count is " + Arrays.toString(count));
     }
 
     private List<String> getColumnNames(ResultSet rs) throws SQLException {

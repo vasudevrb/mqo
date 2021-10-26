@@ -62,7 +62,7 @@ public class Tester {
 
         long t3 = System.currentTimeMillis();
         for (String s : Arrays.asList(q1, q2, q3, q4, q5)) {
-//            optimizer.execute(validator.getLogicalPlan(s));
+            optimizer.execute(validator.getLogicalPlan(s));
         }
         long t4 = System.currentTimeMillis();
 
