@@ -5,6 +5,7 @@ import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
 import common.Evaluator;
 import common.QueryValidator;
+import common.Utils;
 import org.apache.calcite.sql.*;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
@@ -20,6 +21,9 @@ import java.util.stream.IntStream;
 import static batch.Operator.Type.AND;
 import static batch.Operator.Type.OR;
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang.StringUtils.replace;
+import static org.apache.commons.lang.StringUtils.split;
+import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
 
 public class QueryBatcher {
 
@@ -114,8 +118,8 @@ public class QueryBatcher {
         String[] dets_all = new String[cnfs.size()];
         for (int i = 0; i < cnfs.size(); i++) {
             dets_all[i] = cnfs.get(i);
-            dets_all[i] = StringUtils.replace(dets_all[i], "&", "&&");
-            dets_all[i] = StringUtils.replace(dets_all[i], "|", "||");
+            dets_all[i] = replace(dets_all[i], "&", "&&");
+            dets_all[i] = replace(dets_all[i], "|", "||");
         }
 
         evaluator.set(dets_all);
@@ -171,7 +175,7 @@ public class QueryBatcher {
 
     private String getQueryString(SqlNode n1) {
         String query = "SELECT " + String.join(", ", selectList(n1)) + " FROM " + from(n1) + " WHERE " + where(n1);
-        return query.replaceAll("`", "\"");
+        return replace(query, "`", "\"");
     }
 
     private String getCombinedQueryString(SqlNode n1, SqlNode n2) {
@@ -188,13 +192,13 @@ public class QueryBatcher {
         selectSet.addAll(getWherePredicateNames(n2));
 
         String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + from(n1) + " WHERE " + combinedWhere;
-        return combinedQuery.replaceAll("`", "\"");
+        return replace(combinedQuery, "`", "\"");
     }
 
     //NOTE: Where must be of a single query. Combined will not work because of flatMap
     private List<String> getWherePredicateNames(SqlNode n) {
         Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(n)));
-        String cnfString = cnfQ1.asString().replaceAll("`", "\"");
+        String cnfString = cnfQ1.asString().replace("`", "\"");
         return extractPredicates(cnfString)
                 .stream()
                 .flatMap(Collection::stream)
@@ -239,27 +243,6 @@ public class QueryBatcher {
                 .collect(Collectors.toList());
     }
 
-    public Operator build2(SqlNode node1, SqlNode node2) {
-        Operator op = new Operator(AND);
-
-        List<Predicate> node1Preds = extractPredicates(node1);
-        List<Predicate> node2Preds = extractPredicates(node2);
-
-        for (Predicate n1p : node1Preds) {
-            for (Predicate n2p : node2Preds) {
-                if (!n2p.getName().equals(n1p.getName())) {
-                    continue;
-                }
-
-                Operator or1 = new Operator(OR);
-                buildCoveringPredicate2(n1p, n2p, or1);
-                if (or1.terms.size() == 1) op.addTerm(or1.terms.get(0));
-                else if (or1.terms.size() > 1) op.addTerm(or1);
-            }
-        }
-        return op;
-    }
-
     private List<List<Predicate>> clean(List<List<Predicate>> pr) {
         //Filter only those conditions that have the same name
         for (List<Predicate> preds : pr) {
@@ -290,19 +273,20 @@ public class QueryBatcher {
         String cnf = w1.booleanRepn;
         String c2 = w2.booleanRepn;
 
-        String finalStr = "";
-
-        for (String part1 : cnf.replaceAll("\\(", "").replaceAll("\\)", "").split("&")) {
-            for (String part2 : c2.replaceAll("\\(", "").replaceAll("\\)", "").split("&")) {
-                finalStr += "(" + part1 + " | " + part2 + ")";
-                finalStr += " & ";
+        StringBuilder finalStrBuilder = new StringBuilder();
+        for (String part1 : splitByWholeSeparator(replace(cnf, "(", "").replace(")", ""), "&")) {
+            for (String part2 : splitByWholeSeparator(replace(c2, "(", "").replace(")", ""), "&")) {
+                finalStrBuilder.append("(").append(part1).append(" | ").append(part2).append(")");
+                finalStrBuilder.append(" & ");
             }
         }
 
+        String finalStr = finalStrBuilder.toString();
 
-        finalStr = finalStr.substring(0, finalStr.length() - 3).replaceAll("\\|", "OR").replaceAll("&", "AND");
-        for (String splitAnd : finalStr.replaceAll("\\(", "").replaceAll("\\)", "").split(" AND ")) {
-            String[] splitOr = splitAnd.split(" OR ");
+
+        finalStr = finalStr.substring(0, finalStr.length() - 3).replace("|", "OR").replace("&", "AND");
+        for (String splitAnd : splitByWholeSeparator(replace(finalStr, "(", "").replace(")", ""), " AND ")) {
+            String[] splitOr = splitByWholeSeparator(splitAnd, " OR ");
             for (String orp : splitOr) {
                 String val = w1.map.get(orp.trim()) != null ? w1.map.get(orp.trim()) : w2.map.get(orp.trim());
                 finalStr = finalStr.replace(orp.trim(), val);
@@ -321,10 +305,6 @@ public class QueryBatcher {
         } else {
             operator.terms.addAll(predicates);
         }
-    }
-
-    private <T> boolean atLeast(int num, List<T> list, int index) {
-        return list.size() > index + num + 1;
     }
 
     public void buildCoveringPredicate2(Predicate p1, Predicate p2, Operator operator) {
@@ -378,9 +358,9 @@ public class QueryBatcher {
 
     public List<List<Predicate>> extractPredicates(String s) {
         List<List<Predicate>> predicates = new ArrayList<>();
-        for (String splitAnd : s.replaceAll("\\(", "").replaceAll("\\)", "").trim().split(" AND ")) {
+        for (String splitAnd : splitByWholeSeparator(s.replace("(", "").replace(")", "").trim(), " AND ")) {
             List<Predicate> ps = new ArrayList<>();
-            for (String splitOr : splitAnd.split(" OR ")) {
+            for (String splitOr : splitByWholeSeparator(splitAnd, " OR ")) {
                 int firstOpIndex = splitOr.contains(">=") ? splitOr.indexOf(">=")
                         : splitOr.contains("<=") ? splitOr.indexOf("<=")
                         : splitOr.contains("<") ? splitOr.indexOf("<")
@@ -397,40 +377,6 @@ public class QueryBatcher {
                 ps.add(new Predicate(operandVal.get(0), operandVal.get(1), operandVal.get(2)));
             }
             predicates.add(ps);
-        }
-        return predicates;
-    }
-
-    public List<Predicate> extractPredicates(SqlNode node) {
-        List<Predicate> predicates = new ArrayList<>();
-
-        if (node.getKind().equals(SqlKind.ORDER_BY)) {
-            node = ((SqlOrderBy) node).query;
-        }
-
-        if (node == null) return predicates;
-
-        SqlBasicCall where = (SqlBasicCall) ((SqlSelect) node).getWhere();
-        if (where != null) {
-            if (isIdentifier(where, 0) && isLiteral(where, 1)) {
-                predicates.add(Predicate.newPredicate(where.operand(0).toString(), "", where.operand(1).toString()));
-                return predicates;
-            }
-
-            SqlBasicCall left = where.operand(0);
-            SqlBasicCall right = where.operand(1);
-
-            while (!isIdentifier(left, 0) && !isLiteral(left, 1)) {
-                SqlBasicCall call = left.operand(1);
-                predicates.add(Predicate.newPredicate(call.operand(0).toString(),
-                        call.getOperator().getName(), call.operand(1).toString()));
-                left = left.operand(0);
-            }
-
-            predicates.add(Predicate.newPredicate(left.operand(0).toString(), left.getOperator().getName(),
-                    left.operand(1).toString()));
-            predicates.add(Predicate.newPredicate(right.operand(0).toString(), right.getOperator().getName(),
-                    right.operand(1).toString()));
         }
         return predicates;
     }
@@ -489,37 +435,14 @@ public class QueryBatcher {
 
                     int to = firstOpIndex == Integer.MAX_VALUE ? parsed.length() : indexOfVar + firstOpIndex;
                     String part = parsed.substring(indexOfVar, to);
-                    String key = RandomStringUtils.randomAlphabetic(4);
+                    String key = Utils.randomString(4);
                     parsed = parsed.replace(part, key);
                     map.put(key, part);
 
                     indexOfVar = parsed.indexOf(var) - 1;
                 }
             }
-            return new WhereClause(map, parsed.replaceAll("OR", "|").replaceAll("AND", "&"));
-        }
-
-        private String getBooleanRepn2(String w) {
-            List<String> allowedSymbols = asList(">=", "<=", ">", "<", "=", "LIKE");
-            String parsed = w;
-
-            for (String symbol : allowedSymbols) {
-                int index = parsed.indexOf(symbol);
-                while (index >= 0) {
-                    String subw = parsed.substring(index);
-
-                    int firstBracIndex = subw.indexOf(")") > 0 ? subw.indexOf(")") : Integer.MAX_VALUE;
-                    int firstOrIndex = subw.indexOf("OR") > 0 ? subw.indexOf("OR") : Integer.MAX_VALUE;
-                    int firstAndIndex = subw.indexOf("AND") > 0 ? subw.indexOf("AND") : Integer.MAX_VALUE;
-                    int firstOpIndex = Math.min(Math.min(firstBracIndex, firstOrIndex), firstAndIndex);
-
-                    int to = firstOpIndex == Integer.MAX_VALUE ? parsed.length() : index + firstOpIndex;
-                    parsed = parsed.replace(parsed.substring(index, to), "");
-                    index = parsed.indexOf(symbol, index + 1);
-                }
-            }
-
-            return parsed.replaceAll("OR", "|").replaceAll("AND", "&");
+            return new WhereClause(map, replace(parsed, "OR", "|").replace("AND", "&"));
         }
 
         static class WhereClause {
@@ -543,7 +466,7 @@ public class QueryBatcher {
             public Map<String, String> getCleanMap() {
                 Map<String, String> newMap = new HashMap<>();
                 for (String key : map.keySet()) {
-                    String newVal = StringUtils.replace(map.get(key), "`", "");
+                    String newVal = replace(map.get(key), "`", "");
                     newMap.put(key, newVal);
                 }
                 return newMap;
