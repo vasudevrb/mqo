@@ -1,0 +1,15 @@
+Loading TPC-H data into postgres
+
+1. To load the ddl file
+
+> psql -v ON_ERROR_STOP=1 -1 -h localhost -U postgres -f [file] [db_name]
+
+2. Remove trailing delimiter from the .tbl files
+
+> for i in `ls *.tbl`; do sed 's/|$//' $i > ${i/tbl/csv}; done
+
+3. Copy csv files into postgres (in psql)
+
+> \copy customer from 'C:/Users/.../...' with CSV DELIMITER '|';
+
+Note: Make sure to use normal slashes for file name, even for windows
