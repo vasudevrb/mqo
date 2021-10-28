@@ -11,6 +11,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptMaterialization;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.SubstitutionVisitor;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
@@ -111,14 +112,22 @@ public class Optimizer {
     }
 
     public ResultSet executeAndGetResult(RelNode relNode) throws SQLException {
+        RelOptCluster cl = relNode.getCluster();
+        RelTraitSet desired = cl.traitSet().replace(EnumerableConvention.INSTANCE);
+        VolcanoPlanner pl = (VolcanoPlanner) cl.getPlanner();
+        RelNode newRoot = pl.changeTraits(relNode, desired);
+        pl.setRoot(newRoot);
+        RelNode n2 = pl.findBestExp();
+
         RelRunner runner = connection.unwrap(RelRunner.class);
         long t1 = System.nanoTime();
-        PreparedStatement run = runner.prepareStatement(relNode);
+        PreparedStatement run = runner.prepareStatement(n2);
         long t2 = System.nanoTime();
 
         long t3 = System.nanoTime();
         run.execute();
         long t4 = System.nanoTime();
+
 
         System.out.println("Executed query. Compile: " + (t2 - t1)/1000000 + " ms, Execute: " + (t4 - t3)/1000000 + " ms");
         return run.getResultSet();

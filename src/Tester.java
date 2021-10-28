@@ -85,6 +85,7 @@ public class Tester {
         List<List<Long>> times = new ArrayList<>();
 
         //TODO: Find out why queries won't execute in serial
+        //TODO: Test threeway joins
         for (QueryBatcher.BatchQuery bq : combined) {
             System.out.println("EXEC ");
             long t5 = System.currentTimeMillis();
