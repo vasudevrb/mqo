@@ -52,7 +52,7 @@ public class Tester {
                 " AND \"l_shipdate\" > date '1994-01-01'" +
                 " AND \"l_quantity\" > 25";
 
-        String q3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1000";
+        String q3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" BETWEEN 1000 AND 1400";
 
         String q4 = "SELECT \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1200";
 
