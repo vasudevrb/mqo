@@ -34,6 +34,10 @@ public class Utils {
         return true;
     }
 
+    public static boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
     static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
     static long seed = 14124987135L;
     static Random rnd = new Random(seed);

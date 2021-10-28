@@ -17,10 +17,13 @@ public class Predicate extends Term implements Comparable<Predicate> {
     private boolean isInt;
     private boolean isFloat;
 
+    public boolean isJoin;
+
     public Predicate(String name, String operator, String value) {
         this.name = name;
         this.operator = operator;
-        this.value = value;
+        this.value = StringUtils.replace(value, "`", "");
+        this.value = StringUtils.replace(this.value, "\"", "");
 
         this.unquotedName = StringUtils.replace(name, "`", "");
         this.unquotedName = StringUtils.replace(unquotedName, "\"", "");
@@ -129,7 +132,8 @@ public class Predicate extends Term implements Comparable<Predicate> {
 
 
     public boolean matches(Object val) {
-        if (Utils.isInt(val.toString())) return matches(Integer.parseInt(val.toString()));
+        if (isJoin) return true;
+        else if (Utils.isInt(val.toString())) return matches(Integer.parseInt(val.toString()));
         else if (Utils.isFloat(val.toString())) return matches(Float.parseFloat(val.toString()));
         else {
             int val2 = Integer.parseInt(StringUtils.replace(val.toString(), "-", "").trim());

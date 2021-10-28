@@ -52,17 +52,26 @@ public class Tester {
                 " AND \"l_shipdate\" > date '1994-01-01'" +
                 " AND \"l_quantity\" > 25";
 
-        String q3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" BETWEEN 1000 AND 1400";
+        String q3 = "SELECT \"s_name\", \"s_suppkey\""  +
+                " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
+                " WHERE \"s_nationkey\" = \"n_nationkey\"" +
+                " AND \"s_suppkey\" < 800";
 
-        String q4 = "SELECT \"s_name\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1200";
+        String q4 = "SELECT \"s_name\", \"n_name\""  +
+                " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
+                " WHERE \"s_nationkey\" = \"n_nationkey\"" +
+                " AND \"s_suppkey\" < 1200";
 
-        String q5 = "SELECT \"s_suppkey\" FROM \"public\".\"supplier\" WHERE \"s_suppkey\" < 1500";
+        String q5 = "SELECT \"s_name\", \"n_name\""  +
+                " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
+                " WHERE \"s_nationkey\" = \"n_nationkey\"" +
+                " AND \"s_suppkey\" < 1500";
 
-        QueryBatcher queryBatcher = new QueryBatcher(validator);
+        QueryBatcher queryBatcher = new QueryBatcher(config, validator);
 
         long t3 = System.currentTimeMillis();
         for (String s : Arrays.asList(q1, q2, q3, q4, q5)) {
-            optimizer.execute(validator.getLogicalPlan(s));
+            optimizer.execute((validator.getLogicalPlan(s)));
         }
         long t4 = System.currentTimeMillis();
 
@@ -71,13 +80,19 @@ public class Tester {
         List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
         long t2 = System.currentTimeMillis();
 
+        System.out.println("Creating a batch took " + (t2 - t1) + " ms");
+
         List<List<Long>> times = new ArrayList<>();
 
+        //TODO: Find out why queries won't execute in serial
         for (QueryBatcher.BatchQuery bq : combined) {
+            System.out.println("EXEC ");
             long t5 = System.currentTimeMillis();
             RelNode rn = validator.getLogicalPlan(bq.query);
             ResultSet rs = optimizer.executeAndGetResult(rn);
             long t6 = System.currentTimeMillis();
+
+            System.out.println("UNBA ");
 
             long t7 = System.currentTimeMillis();
             queryBatcher.unbatchResults3(bq, rs);

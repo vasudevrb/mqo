@@ -3,37 +3,36 @@ package batch;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
+import common.Configuration;
 import common.Evaluator;
 import common.QueryValidator;
 import common.Utils;
 import org.apache.calcite.sql.*;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static batch.Operator.Type.AND;
 import static batch.Operator.Type.OR;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang.StringUtils.replace;
-import static org.apache.commons.lang.StringUtils.split;
 import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
 
 public class QueryBatcher {
 
     private final Normaliser normaliser;
+    private final Configuration configuration;
     private final QueryValidator validator;
     private final Evaluator evaluator;
 
-    public QueryBatcher(QueryValidator validator) {
-        this.normaliser = new Normaliser();
+    public QueryBatcher(Configuration configuration, QueryValidator validator) {
         this.validator = validator;
+        this.configuration = configuration;
+        this.normaliser = new Normaliser();
         this.evaluator = new Evaluator();
     }
 
@@ -46,6 +45,7 @@ public class QueryBatcher {
 
     public List<BatchQuery> batch(List<String> queries) throws Exception {
         ArrayList<BatchQuery> batchedQueries = new ArrayList<>();
+        Map<String, SqlNode> batchedQueryNodes = new HashMap<>();
 
         if (queries.size() == 0 || queries.size() == 1) {
             return batchedQueries;
@@ -129,7 +129,7 @@ public class QueryBatcher {
         for (List<Predicate> prs : preds) {
 
             List<String> colInfo = new ArrayList<>();
-            for (Predicate pr: prs) {
+            for (Predicate pr : prs) {
                 colInfo.add(varMap.stream().filter(x -> x.containsKey(pr.toString())).findFirst().get().get(pr.toString()));
             }
             tabInfo.add(colInfo);
@@ -145,7 +145,7 @@ public class QueryBatcher {
 
         int[] count = new int[cnfs.size()];
 
-        final MapContext context = new MapContext();
+        final DefaultMapContext context = new DefaultMapContext();
 
         for (int i = 0; i < tb.size(); i++) {
             List<String> tInfo = tabInfo.get(i);
@@ -187,7 +187,7 @@ public class QueryBatcher {
         Set<String> selectSet = new HashSet<>();
         selectSet.addAll(select1);
         selectSet.addAll(select2);
-        selectSet.addAll(combinedWhere.getAllPredicateNames());
+        selectSet.addAll(combinedWhere.getAllPredicateNames(s -> !isTableName(s)));
         selectSet.addAll(getWherePredicateNames(n1));
         selectSet.addAll(getWherePredicateNames(n2));
 
@@ -202,6 +202,7 @@ public class QueryBatcher {
         return extractPredicates(cnfString)
                 .stream()
                 .flatMap(Collection::stream)
+                .filter(pr -> !isTableName(pr.getValue())) //Remove join predicates
                 .map(Predicate::getName)
                 .collect(Collectors.toList());
     }
@@ -229,6 +230,16 @@ public class QueryBatcher {
     }
 
     public String from(SqlNode node) {
+        SqlSelect selectNode = (SqlSelect) node;
+
+        if (selectNode.getFrom() instanceof SqlJoin) {
+            List<String> operands = ((SqlJoin) selectNode.getFrom())
+                    .getOperandList().stream()
+                    .filter(x -> x instanceof SqlBasicCall)
+                    .map(SqlNode::toString)
+                    .collect(Collectors.toList());
+            return String.join(",", operands);
+        }
         return ((SqlSelect) node).getFrom().toString();
     }
 
@@ -308,6 +319,13 @@ public class QueryBatcher {
     }
 
     public void buildCoveringPredicate2(Predicate p1, Predicate p2, Operator operator) {
+        //The fact that we're here means p1 and p2 have the same LHS
+        //If their RHS is a column name and it's the same for p1 and p2, it's a join!
+        if (isTableName(p1.getValue()) && p1.getValue().equals(p2.getValue())) {
+            operator.addTerm(p1);
+            return;
+        }
+
         if (p1.isOperator(">=") || p1.isOperator(">")) {
             if (p2.isOperator(">") || p2.isOperator(">=")) {
                 boolean p1Greater = p1.isOperator(">=") ? p1.compareTo(p2) >= 0 : p1.compareTo(p2) > 0;
@@ -374,11 +392,22 @@ public class QueryBatcher {
                 List<String> operandVal = asList(splitOr.substring(0, firstOpIndex).trim(),
                         splitOr.substring(firstOpIndex, firstOpIndex + 2).trim(),
                         splitOr.substring(firstOpIndex + 2).trim());
-                ps.add(new Predicate(operandVal.get(0), operandVal.get(1), operandVal.get(2)));
+                Predicate p = new Predicate(operandVal.get(0), operandVal.get(1), operandVal.get(2));
+                p.isJoin = isTableName(splitOr.substring(firstOpIndex + 2));
+
+                ps.add(p);
             }
             predicates.add(ps);
         }
         return predicates;
+    }
+
+    private boolean isTableName(String operand) {
+        if (Utils.isDigit(operand.charAt(0))) return false;
+
+        operand = replace(operand, "`", "");
+        if (operand.contains(".")) operand = splitByWholeSeparator(operand, ".")[0];
+        return configuration.tableNames.contains(operand);
     }
 
     private boolean isIdentifier(SqlBasicCall call, int index) {

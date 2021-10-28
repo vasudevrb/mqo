@@ -1,6 +1,7 @@
 package common;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -16,6 +17,7 @@ import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
@@ -30,8 +32,11 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 public class Configuration {
@@ -46,6 +51,8 @@ public class Configuration {
     public Prepare.CatalogReader catalogReader;
     public VolcanoPlanner planner;
     public RelOptCluster cluster;
+
+    public List<String> tableNames;
 
     private Configuration(SchemaPlus rootSchema, SchemaPlus schema, CalciteConnectionConfig config,
                           CalciteConnection connection, SqlValidator validator, SqlToRelConverter converter,
@@ -74,9 +81,16 @@ public class Configuration {
         Connection connection = DriverManager.getConnection("jdbc:calcite:");
         CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
 
+
         SchemaPlus rootSchema = calciteConnection.getRootSchema();
         DataSource dataSource = JdbcSchema.dataSource("jdbc:postgresql:tpch_test", "org.postgresql.Driver", "postgres", "vasu");
         SchemaPlus defaultSchema = rootSchema.add("public", JdbcSchema.create(rootSchema, "public", dataSource, null, null));
+
+        List<String> tabNames = new ArrayList<>();
+        ResultSet rs = connection.getMetaData().getTables("tpch_test", null, "%", new String[]{"TABLE"});
+        while (rs.next()) {
+            tabNames.add(rs.getString(3));
+        }
 
         Prepare.CatalogReader catalogReader = new CalciteCatalogReader(CalciteSchema.from(rootSchema),
                 Collections.singletonList(defaultSchema.getName()), typeFactory, config);
@@ -94,6 +108,14 @@ public class Configuration {
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
+        planner.addRule(PruneEmptyRules.PROJECT_INSTANCE);
+        planner.addRule(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_VALUES_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
+
         RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
         SqlToRelConverter.Config converterConfig = SqlToRelConverter.configBuilder()
@@ -110,8 +132,11 @@ public class Configuration {
                 converterConfig
         );
 
-        return new Configuration(rootSchema, defaultSchema, config, calciteConnection,
+        Configuration configuration = new Configuration(rootSchema, defaultSchema, config, calciteConnection,
                 validator, converter, catalogReader, planner, cluster);
+        configuration.tableNames = tabNames;
+
+        return configuration;
 
     }
 }
