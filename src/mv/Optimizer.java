@@ -6,7 +6,6 @@ import common.QueryValidator;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
-import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService;
@@ -47,8 +46,6 @@ public class Optimizer {
     private final VolcanoPlanner planner;
     private final RelOptCluster cluster;
 
-    private final CalciteSchema root;
-
     public Optimizer(Configuration programConfig) {
         this.rootSchema = programConfig.rootSchema;
         this.schema = programConfig.schema;
@@ -57,7 +54,6 @@ public class Optimizer {
         this.planner = programConfig.planner;
         this.cluster = programConfig.cluster;
 
-        this.root = CalciteSchema.from(programConfig.rootSchema);
         this.validator = new QueryValidator(programConfig);
     }
 
@@ -138,22 +134,6 @@ public class Optimizer {
         consumer.accept(run.getResultSet());
         run.close();
     }
-
-    public void executeAndGetResult2(RelNode relNode) {
-        RelOptCluster cl = relNode.getCluster();
-        RelTraitSet desired = cl.traitSet().replace(BindableConvention.INSTANCE);
-        VolcanoPlanner pl = (VolcanoPlanner) cl.getPlanner();
-        RelNode newRoot = pl.changeTraits(relNode, desired);
-        pl.setRoot(newRoot);
-        RelNode n2 = pl.findBestExp();
-//        System.out.println("Success: Num rows is " + ((EnumerableBindable) n2).bind(new SchemaOnlyDataContext(root)).count());
-        System.out.println("Success: Num rows is " + n2);
-    }
-
-    public void execute2(RelNode relNode) {
-        executeAndGetResult2(relNode);
-    }
-
 
     public RelNode getPhysicalPlan(RelNode relNode, List<RelOptMaterialization> materializations) {
         RuleSet rules = RuleSets.ofList(
