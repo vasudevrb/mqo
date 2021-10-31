@@ -5,7 +5,7 @@ import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
 import common.Configuration;
 import common.Evaluator;
-import common.QueryValidator;
+import common.QueryExecutor;
 import common.Utils;
 import org.apache.calcite.sql.*;
 import org.apache.commons.lang.StringUtils;
@@ -25,10 +25,10 @@ public class QueryBatcher {
 
     private final Normaliser normaliser;
     private final Configuration configuration;
-    private final QueryValidator validator;
+    private final QueryExecutor validator;
     private final Evaluator evaluator;
 
-    public QueryBatcher(Configuration configuration, QueryValidator validator) {
+    public QueryBatcher(Configuration configuration, QueryExecutor validator) {
         this.validator = validator;
         this.configuration = configuration;
         this.normaliser = new Normaliser();

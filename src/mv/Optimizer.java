@@ -2,16 +2,14 @@ package mv;
 
 import com.google.common.collect.ImmutableList;
 import common.Configuration;
-import common.QueryValidator;
+import common.QueryExecutor;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
-import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptMaterialization;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.SubstitutionVisitor;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
@@ -27,20 +25,15 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.tools.*;
 import org.apache.calcite.util.Pair;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class Optimizer {
     private final SchemaPlus rootSchema;
     private final SchemaPlus schema;
 
-    private final CalciteConnection connection;
-    private final QueryValidator validator;
+    private final QueryExecutor validator;
 
     private final Prepare.CatalogReader catalogReader;
     private final VolcanoPlanner planner;
@@ -49,12 +42,11 @@ public class Optimizer {
     public Optimizer(Configuration programConfig) {
         this.rootSchema = programConfig.rootSchema;
         this.schema = programConfig.schema;
-        this.connection = programConfig.connection;
         this.catalogReader = programConfig.catalogReader;
         this.planner = programConfig.planner;
         this.cluster = programConfig.cluster;
 
-        this.validator = new QueryValidator(programConfig);
+        this.validator = new QueryExecutor(programConfig);
     }
 
     public Pair<RelNode, List<RelOptMaterialization>> getMaterializations(String mv_name, String mv, String q) throws Exception {
@@ -110,29 +102,6 @@ public class Optimizer {
         final HepPlanner hepPlanner = new HepPlanner(program);
         hepPlanner.setRoot(rel);
         return hepPlanner.findBestExp();
-    }
-
-    public void executeAndGetResult(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
-        RelOptCluster cl = relNode.getCluster();
-        RelTraitSet desired = cl.traitSet().replace(EnumerableConvention.INSTANCE);
-        VolcanoPlanner pl = (VolcanoPlanner) cl.getPlanner();
-        RelNode newRoot = pl.changeTraits(relNode, desired);
-        pl.setRoot(newRoot);
-        RelNode n2 = pl.findBestExp();
-
-        RelRunner runner = connection.unwrap(RelRunner.class);
-        long t1 = System.nanoTime();
-        PreparedStatement run = runner.prepareStatement(n2);
-        long t2 = System.nanoTime();
-
-        long t3 = System.nanoTime();
-        run.execute();
-        long t4 = System.nanoTime();
-
-
-        System.out.println("Executed query. Compile: " + (t2 - t1) / 1000000 + " ms, Execute: " + (t4 - t3) / 1000000 + " ms");
-        consumer.accept(run.getResultSet());
-        run.close();
     }
 
     public RelNode getPhysicalPlan(RelNode relNode, List<RelOptMaterialization> materializations) {

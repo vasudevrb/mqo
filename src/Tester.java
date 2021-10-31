@@ -1,7 +1,7 @@
 import batch.QueryBatcher;
 import common.Configuration;
+import common.QueryExecutor;
 import common.QueryUtils;
-import common.QueryValidator;
 import mv.Optimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
@@ -16,17 +16,17 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Tester {
     private Configuration config;
     private Optimizer optimizer;
-    private QueryValidator validator;
+    private QueryExecutor executor;
 
     public Tester(Configuration config) throws SQLException {
         this.optimizer = new Optimizer(config);
-        this.validator = new QueryValidator(config);
+        this.executor = new QueryExecutor(config);
         this.config = config;
     }
 
     public void testMVSubstitution() throws Exception {
         //Regular execution
-        RelNode regNode = validator.getLogicalPlan(Queries.q3);
+        RelNode regNode = executor.getLogicalPlan(Queries.q3);
         RelNode physicalPlan = optimizer.getPhysicalPlan(regNode);
 //        optimizer.execute(physicalPlan);
 
@@ -68,11 +68,11 @@ public class Tester {
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
                 " AND \"s_suppkey\" < 1500";
 
-        QueryBatcher queryBatcher = new QueryBatcher(config, validator);
+        QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
         long t3 = System.currentTimeMillis();
         for (String s : Arrays.asList(q1, q2, q3, q4, q5)) {
-            optimizer.executeAndGetResult(validator.getLogicalPlan(s), rs -> System.out.println("Count is " + QueryUtils.countRows(rs)));
+            executor.execute(executor.getLogicalPlan(s), rs -> System.out.println("Count is " + QueryUtils.countRows(rs)));
         }
         long t4 = System.currentTimeMillis();
 
@@ -94,8 +94,8 @@ public class Tester {
             AtomicLong t7 = new AtomicLong();
             AtomicLong t8 = new AtomicLong();
 
-            RelNode rn = validator.getLogicalPlan(bq.query);
-            optimizer.executeAndGetResult(rn, rs -> {
+            RelNode rn = executor.getLogicalPlan(bq.query);
+            executor.execute(rn, rs -> {
                 System.out.println("UNBA ");
                 t7.set(System.currentTimeMillis());
                 queryBatcher.unbatchResults3(bq, rs);
