@@ -1,16 +1,17 @@
 import batch.QueryBatcher;
 import common.Configuration;
+import common.QueryUtils;
 import common.QueryValidator;
 import mv.Optimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Tester {
     private Configuration config;
@@ -27,13 +28,13 @@ public class Tester {
         //Regular execution
         RelNode regNode = validator.getLogicalPlan(Queries.q3);
         RelNode physicalPlan = optimizer.getPhysicalPlan(regNode);
-        optimizer.execute(physicalPlan);
+//        optimizer.execute(physicalPlan);
 
         //MV execution
         Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("MV0", Queries.mv0, Queries.q0);
         RelNode node = optimizer.getPhysicalPlan(optimizer.optimize(m).get(0), m.right);
         node.explain();
-        optimizer.execute(node);
+//        optimizer.execute(node);
     }
 
     public void testBatch() throws Exception {
@@ -52,17 +53,17 @@ public class Tester {
                 " AND \"l_shipdate\" > date '1994-01-01'" +
                 " AND \"l_quantity\" > 25";
 
-        String q3 = "SELECT \"s_name\", \"s_suppkey\""  +
+        String q3 = "SELECT \"s_name\", \"s_suppkey\"" +
                 " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
                 " AND \"s_suppkey\" < 800";
 
-        String q4 = "SELECT \"s_name\", \"n_name\""  +
+        String q4 = "SELECT \"s_name\", \"n_name\"" +
                 " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
                 " AND \"s_suppkey\" < 1200";
 
-        String q5 = "SELECT \"s_name\", \"n_name\""  +
+        String q5 = "SELECT \"s_name\", \"n_name\"" +
                 " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
                 " AND \"s_suppkey\" < 1500";
@@ -71,7 +72,10 @@ public class Tester {
 
         long t3 = System.currentTimeMillis();
         for (String s : Arrays.asList(q1, q2, q3, q4, q5)) {
-            optimizer.execute((validator.getLogicalPlan(s)));
+            optimizer.executeAndGetResult(validator.getLogicalPlan(s), rs -> {
+                System.out.println("Count is " + QueryUtils.countRows(rs));
+                return null;
+            });
         }
         long t4 = System.currentTimeMillis();
 
@@ -89,17 +93,22 @@ public class Tester {
         for (QueryBatcher.BatchQuery bq : combined) {
             System.out.println("EXEC ");
             long t5 = System.currentTimeMillis();
+
+            AtomicLong t7 = new AtomicLong();
+            AtomicLong t8 = new AtomicLong();
+
             RelNode rn = validator.getLogicalPlan(bq.query);
-            ResultSet rs = optimizer.executeAndGetResult(rn);
+            optimizer.executeAndGetResult(rn, rs -> {
+                System.out.println("UNBA ");
+                t7.set(System.currentTimeMillis());
+                queryBatcher.unbatchResults3(bq, rs);
+                t8.set(System.currentTimeMillis());
+
+                return null;
+            });
             long t6 = System.currentTimeMillis();
 
-            System.out.println("UNBA ");
-
-            long t7 = System.currentTimeMillis();
-            queryBatcher.unbatchResults3(bq, rs);
-            long t8 = System.currentTimeMillis();
-
-            times.add(Arrays.asList(t6 - t5, t8 - t7));
+            times.add(Arrays.asList(t6 - t5, t8.get() - t7.get()));
         }
 
 

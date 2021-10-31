@@ -6,6 +6,7 @@ import common.QueryValidator;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
+import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService;
@@ -33,6 +34,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 public class Optimizer {
     private final SchemaPlus rootSchema;
@@ -45,6 +47,8 @@ public class Optimizer {
     private final VolcanoPlanner planner;
     private final RelOptCluster cluster;
 
+    private final CalciteSchema root;
+
     public Optimizer(Configuration programConfig) {
         this.rootSchema = programConfig.rootSchema;
         this.schema = programConfig.schema;
@@ -53,6 +57,7 @@ public class Optimizer {
         this.planner = programConfig.planner;
         this.cluster = programConfig.cluster;
 
+        this.root = CalciteSchema.from(programConfig.rootSchema);
         this.validator = new QueryValidator(programConfig);
     }
 
@@ -111,7 +116,7 @@ public class Optimizer {
         return hepPlanner.findBestExp();
     }
 
-    public ResultSet executeAndGetResult(RelNode relNode) throws SQLException {
+    public void executeAndGetResult(RelNode relNode, Function<ResultSet, Void> func) throws SQLException {
         RelOptCluster cl = relNode.getCluster();
         RelTraitSet desired = cl.traitSet().replace(EnumerableConvention.INSTANCE);
         VolcanoPlanner pl = (VolcanoPlanner) cl.getPlanner();
@@ -129,22 +134,24 @@ public class Optimizer {
         long t4 = System.nanoTime();
 
 
-        System.out.println("Executed query. Compile: " + (t2 - t1)/1000000 + " ms, Execute: " + (t4 - t3)/1000000 + " ms");
-        return run.getResultSet();
+        System.out.println("Executed query. Compile: " + (t2 - t1) / 1000000 + " ms, Execute: " + (t4 - t3) / 1000000 + " ms");
+        func.apply(run.getResultSet());
+        run.close();
     }
 
-    public void execute(RelNode relNode) throws SQLException {
-        ResultSet rs = executeAndGetResult(relNode);
+    public void executeAndGetResult2(RelNode relNode) {
+        RelOptCluster cl = relNode.getCluster();
+        RelTraitSet desired = cl.traitSet().replace(BindableConvention.INSTANCE);
+        VolcanoPlanner pl = (VolcanoPlanner) cl.getPlanner();
+        RelNode newRoot = pl.changeTraits(relNode, desired);
+        pl.setRoot(newRoot);
+        RelNode n2 = pl.findBestExp();
+//        System.out.println("Success: Num rows is " + ((EnumerableBindable) n2).bind(new SchemaOnlyDataContext(root)).count());
+        System.out.println("Success: Num rows is " + n2);
+    }
 
-        int count = 0;
-        while (rs.next()) {
-            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
-//                System.out.print(rs.getObject(i) + ", ");
-            }
-//            System.out.println();
-            count++;
-        }
-        System.out.println("Count is " + count);
+    public void execute2(RelNode relNode) {
+        executeAndGetResult2(relNode);
     }
 
 

@@ -109,6 +109,16 @@ public class Configuration {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         planner.addRule(PruneEmptyRules.PROJECT_INSTANCE);
+//        planner.addRule(Bindables.BINDABLE_SORT_RULE);
+//        planner.addRule(Bindables.BINDABLE_VALUES_RULE);
+//        planner.addRule(Bindables.BINDABLE_PROJECT_RULE);
+//        planner.addRule(Bindables.BINDABLE_FILTER_RULE);
+//        planner.addRule(Bindables.BINDABLE_TABLE_SCAN_RULE);
+//        planner.addRule(Bindables.BINDABLE_JOIN_RULE);
+//        planner.addRule(Bindables.FROM_NONE_RULE);
+        planner.addRule(EnumerableRules.TO_BINDABLE);
+//
+//        EnumerableRules.rules().forEach(x -> planner.addRule(x));
         planner.addRule(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_VALUES_RULE);
@@ -118,10 +128,9 @@ public class Configuration {
 
         RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
-        SqlToRelConverter.Config converterConfig = SqlToRelConverter.configBuilder()
+        SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
-                .withExpand(false) // https://issues.apache.org/jira/browse/CALCITE-1045
-                .build();
+                .withExpand(false); // https://issues.apache.org/jira/browse/CALCITE-1045
 
         SqlToRelConverter converter = new SqlToRelConverter(
                 null,

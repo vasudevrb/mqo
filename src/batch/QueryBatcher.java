@@ -8,7 +8,6 @@ import common.Evaluator;
 import common.QueryValidator;
 import common.Utils;
 import org.apache.calcite.sql.*;
-import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
 
 import java.sql.ResultSet;
@@ -66,10 +65,20 @@ public class QueryBatcher {
             SqlNode n3 = validator.validate(queries.get(k));
             for (int l = batchedQueries.size() - 1; l >= 0; l--) {
                 BatchQuery bq = batchedQueries.get(l);
-                SqlNode n4 = validator.validate(bq.query);
+
+                SqlNode n4;
+                if (batchedQueryNodes.containsKey(bq.query)) {
+                    n4 = batchedQueryNodes.get(bq.query);
+                } else {
+                    n4 = validator.validate(bq.query);
+                    batchedQueryNodes.put(bq.query, n4);
+                }
+
                 if (canMerge(n3, n4)) {
                     added = true;
                     batchedQueries.remove(l);
+                    batchedQueryNodes.remove(bq.query);
+
                     bq.query = getCombinedQueryString(n3, n4);
                     bq.indexes.add(k);
                     bq.parts.add(n3);
@@ -87,7 +96,7 @@ public class QueryBatcher {
         return batchedQueries.stream().filter(bq -> bq.indexes.size() > 1).collect(Collectors.toList());
     }
 
-    public void unbatchResults3(BatchQuery bq, ResultSet rs) throws SQLException {
+    public void unbatchResults3(BatchQuery bq, ResultSet rs) {
         ArrayList<String> cnfs = new ArrayList<>();
         List<Map<String, String>> varMap = new ArrayList<>();
         List<List<Predicate>> preds = new ArrayList<>();
@@ -106,13 +115,24 @@ public class QueryBatcher {
             varMap.set(i, inverseMap(varMap.get(i)));
         }
 
-        List<String> columnNames = getColumnNames(rs);
-        List<List<Object>> table = new ArrayList<>();
-        columnNames.forEach(cn -> table.add(new ArrayList<>()));
-        while (rs.next()) {
-            for (int i = 0; i < columnNames.size(); i++) {
-                table.get(i).add(rs.getObject(i + 1));
+        final List<String> columnNames = new ArrayList<>();
+        final List<List<Object>> table = new ArrayList<>();
+
+        try {
+            columnNames.addAll(getColumnNames(rs));
+            columnNames.forEach(cn -> table.add(new ArrayList<>()));
+            while (rs.next()) {
+                for (int i = 0; i < columnNames.size(); i++) {
+                    table.get(i).add(rs.getObject(i + 1));
+                }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        if (columnNames.isEmpty()) {
+            System.out.println("Column names is empty. Returning out of the function...");
+            return;
         }
 
         String[] dets_all = new String[cnfs.size()];
