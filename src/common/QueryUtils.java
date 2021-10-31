@@ -15,7 +15,8 @@ public class QueryUtils {
     }
 
     public static String where(SqlNode node) {
-        return ((SqlSelect) node).getWhere().toString();
+        SqlNode n1 = ((SqlSelect) node).getWhere();
+        return n1 != null ? n1.toString() : "";
     }
 
     public static List<String> selectList(SqlNode node) {
