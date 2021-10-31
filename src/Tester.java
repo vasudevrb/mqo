@@ -58,35 +58,35 @@ public class Tester {
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
                 " AND \"s_suppkey\" < 800";
 
-        String q4 = "SELECT \"s_name\", \"n_name\"" +
-                " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
+        String q4 = "SELECT \"s_name\", \"n_name\", \"r_name\"" +
+                " FROM \"public\".\"supplier\", \"public\".\"nation\", \"public\".\"region\"" +
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
+                " AND \"n_regionkey\" = \"r_regionkey\"" +
                 " AND \"s_suppkey\" < 1200";
 
-        String q5 = "SELECT \"s_name\", \"n_name\"" +
-                " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
+        String q5 = "SELECT \"s_name\", \"n_name\", \"r_name\"" +
+                " FROM \"public\".\"supplier\", \"public\".\"nation\", \"public\".\"region\"" +
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
-                " OR \"s_suppkey\" < 1500";
+                " AND \"n_regionkey\" = \"r_regionkey\"" +
+                " AND \"s_suppkey\" < 1500";
 
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
         long t3 = System.currentTimeMillis();
-        for (String s : Arrays.asList(q1, q2, q3, q4, q5)) {
+        for (String s : Arrays.asList(q1, q2, q4, q5)) {
             executor.execute(executor.getLogicalPlan(s), rs -> System.out.println("Count is " + QueryUtils.countRows(rs)));
         }
         long t4 = System.currentTimeMillis();
 
 
         long t1 = System.currentTimeMillis();
-        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q4, q5));
+        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
         long t2 = System.currentTimeMillis();
 
         System.out.println("Creating a batch took " + (t2 - t1) + " ms");
 
         List<List<Long>> times = new ArrayList<>();
 
-        //TODO: Find out why queries won't execute in serial
-        //TODO: Test threeway joins
         for (QueryBatcher.BatchQuery bq : combined) {
             long t5 = System.currentTimeMillis();
 
@@ -105,10 +105,12 @@ public class Tester {
         }
 
 
-//        long exec_times = times.get(0).get(0) + times.get(1).get(0);
-//        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
-        long exec_times = times.get(0).get(0);
-        long unbatch_times = times.get(0).get(1);
+        long exec_times = times.get(0).get(0) + times.get(1).get(0);
+        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
+//        long exec_times = times.get(0).get(0);
+//        long unbatch_times = times.get(0).get(1);
+//        long exec_times = 0;
+//        long unbatch_times = 0;
 
         System.out.println("===============================");
 

@@ -194,7 +194,7 @@ public class QueryBatcher {
     }
 
     private String getQueryString(SqlNode n1) {
-        String query = "SELECT " + String.join(", ", selectList(n1)) + " FROM " + from(n1) + " WHERE " + where(n1);
+        String query = "SELECT " + String.join(", ", selectList(n1)) + " FROM " + String.join(",", from(n1)) + " WHERE " + where(n1);
         return replace(query, "`", "\"");
     }
 
@@ -211,7 +211,7 @@ public class QueryBatcher {
         selectSet.addAll(getWherePredicateNames(n1));
         selectSet.addAll(getWherePredicateNames(n2));
 
-        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + from(n1) + " WHERE " + combinedWhere;
+        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + String.join(",", from(n1)) + " WHERE " + combinedWhere;
         return replace(combinedQuery, "`", "\"");
     }
 
@@ -228,7 +228,7 @@ public class QueryBatcher {
     }
 
     public boolean canMerge(SqlNode node1, SqlNode node2) {
-        return from(node1).equals(from(node2));
+        return from(node1).containsAll(from(node2));
     }
 
     public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
@@ -249,18 +249,28 @@ public class QueryBatcher {
         return opAnd;
     }
 
-    public String from(SqlNode node) {
+    public List<String> from(SqlNode node) {
         SqlSelect selectNode = (SqlSelect) node;
 
         if (selectNode.getFrom() instanceof SqlJoin) {
-            List<String> operands = ((SqlJoin) selectNode.getFrom())
-                    .getOperandList().stream()
-                    .filter(x -> x instanceof SqlBasicCall)
-                    .map(SqlNode::toString)
-                    .collect(Collectors.toList());
-            return String.join(",", operands);
+            return getOperands((SqlJoin) selectNode.getFrom());
         }
-        return ((SqlSelect) node).getFrom().toString();
+
+        return List.of(((SqlSelect) node).getFrom().toString());
+    }
+
+    //Given a SqlJoin, this function returns all the operands that are not commas and stuff
+    //This is needed for threeway joins, which in calcite, are represented as [SqlJoin, SqlBasicCall]
+    private List<String> getOperands(SqlJoin join) {
+        ArrayList<String> calls = new ArrayList<>();
+
+        calls.addAll(join.getOperandList().stream().filter(x -> x instanceof SqlBasicCall).map(SqlNode::toString).toList());
+        join.getOperandList().stream()
+                .filter(x -> x instanceof SqlJoin)
+                .map(j -> getOperands((SqlJoin) j))
+                .forEach(ca -> calls.addAll(ca));
+
+        return calls;
     }
 
     public String where(SqlNode node) {
