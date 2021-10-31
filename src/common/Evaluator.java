@@ -1,5 +1,8 @@
 package common;
 
+import com.bpodgursky.jbool_expressions.Expression;
+import com.bpodgursky.jbool_expressions.parsers.ExprParser;
+import com.bpodgursky.jbool_expressions.rules.RuleSet;
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlContext;
 import org.apache.commons.jexl3.JexlEngine;
@@ -25,5 +28,8 @@ public class Evaluator {
         return Boolean.parseBoolean(expressions.get(exprIndex).evaluate(context).toString());
     }
 
-
+    public static void main(String[] args) {
+        Expression<String> expr2 = RuleSet.toCNF(ExprParser.parse("x & y"));
+        System.out.println(expr2.toString());
+    }
 }

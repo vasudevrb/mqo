@@ -66,7 +66,7 @@ public class Tester {
         String q5 = "SELECT \"s_name\", \"n_name\"" +
                 " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
                 " WHERE \"s_nationkey\" = \"n_nationkey\"" +
-                " AND \"s_suppkey\" < 1500";
+                " OR \"s_suppkey\" < 1500";
 
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
@@ -78,7 +78,7 @@ public class Tester {
 
 
         long t1 = System.currentTimeMillis();
-        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
+        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q4, q5));
         long t2 = System.currentTimeMillis();
 
         System.out.println("Creating a batch took " + (t2 - t1) + " ms");
@@ -88,7 +88,6 @@ public class Tester {
         //TODO: Find out why queries won't execute in serial
         //TODO: Test threeway joins
         for (QueryBatcher.BatchQuery bq : combined) {
-            System.out.println("EXEC ");
             long t5 = System.currentTimeMillis();
 
             AtomicLong t7 = new AtomicLong();
@@ -96,7 +95,6 @@ public class Tester {
 
             RelNode rn = executor.getLogicalPlan(bq.query);
             executor.execute(rn, rs -> {
-                System.out.println("UNBA ");
                 t7.set(System.currentTimeMillis());
                 queryBatcher.unbatchResults3(bq, rs);
                 t8.set(System.currentTimeMillis());
@@ -107,10 +105,10 @@ public class Tester {
         }
 
 
-        long exec_times = times.get(0).get(0) + times.get(1).get(0);
-        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
-//        long exec_times = times.get(0).get(0);
-//        long unbatch_times = times.get(0).get(1);
+//        long exec_times = times.get(0).get(0) + times.get(1).get(0);
+//        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
+        long exec_times = times.get(0).get(0);
+        long unbatch_times = times.get(0).get(1);
 
         System.out.println("===============================");
 
