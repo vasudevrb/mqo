@@ -34,7 +34,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 public class Optimizer {
     private final SchemaPlus rootSchema;
@@ -116,7 +116,7 @@ public class Optimizer {
         return hepPlanner.findBestExp();
     }
 
-    public void executeAndGetResult(RelNode relNode, Function<ResultSet, Void> func) throws SQLException {
+    public void executeAndGetResult(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
         RelOptCluster cl = relNode.getCluster();
         RelTraitSet desired = cl.traitSet().replace(EnumerableConvention.INSTANCE);
         VolcanoPlanner pl = (VolcanoPlanner) cl.getPlanner();
@@ -135,7 +135,7 @@ public class Optimizer {
 
 
         System.out.println("Executed query. Compile: " + (t2 - t1) / 1000000 + " ms, Execute: " + (t4 - t3) / 1000000 + " ms");
-        func.apply(run.getResultSet());
+        consumer.accept(run.getResultSet());
         run.close();
     }
 

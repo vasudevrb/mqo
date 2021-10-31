@@ -72,10 +72,7 @@ public class Tester {
 
         long t3 = System.currentTimeMillis();
         for (String s : Arrays.asList(q1, q2, q3, q4, q5)) {
-            optimizer.executeAndGetResult(validator.getLogicalPlan(s), rs -> {
-                System.out.println("Count is " + QueryUtils.countRows(rs));
-                return null;
-            });
+            optimizer.executeAndGetResult(validator.getLogicalPlan(s), rs -> System.out.println("Count is " + QueryUtils.countRows(rs)));
         }
         long t4 = System.currentTimeMillis();
 
@@ -103,8 +100,6 @@ public class Tester {
                 t7.set(System.currentTimeMillis());
                 queryBatcher.unbatchResults3(bq, rs);
                 t8.set(System.currentTimeMillis());
-
-                return null;
             });
             long t6 = System.currentTimeMillis();
 
