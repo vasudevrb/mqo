@@ -3,6 +3,7 @@ import common.Configuration;
 import common.QueryExecutor;
 import common.QueryUtils;
 import mv.Optimizer;
+import mv.Optimizer2;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
@@ -16,25 +17,29 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Tester {
     private Configuration config;
     private Optimizer optimizer;
+    private Optimizer2 op2;
     private QueryExecutor executor;
 
     public Tester(Configuration config) throws SQLException {
         this.optimizer = new Optimizer(config);
+        this.op2 = new Optimizer2(config);
         this.executor = new QueryExecutor(config);
         this.config = config;
     }
 
     public void testMVSubstitution() throws Exception {
         //Regular execution
-        RelNode regNode = executor.getLogicalPlan(Queries.q3);
-        RelNode physicalPlan = optimizer.getPhysicalPlan(regNode);
-//        optimizer.execute(physicalPlan);
+        RelNode regNode = executor.getLogicalPlan(Queries.q2);
+//        RelNode physicalPlan = optimizer.getPhysicalPlan(regNode);
+//        executor.execute(regNode, null);
 
         //MV execution
-        Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("MV0", Queries.mv0, Queries.q0);
-        RelNode node = optimizer.getPhysicalPlan(optimizer.optimize(m).get(0), m.right);
-        node.explain();
-//        optimizer.execute(node);
+        Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("MV2", Queries.mv2, Queries.q2);
+        RelNode n = optimizer.optimize(m).get(0);
+        RelNode pp = optimizer.getPhysicalPlan(n);
+        System.out.println(n.explain());
+        executor.execute(n, null);
+
     }
 
     public void testBatch() throws Exception {

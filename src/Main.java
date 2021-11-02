@@ -7,8 +7,8 @@ public class Main {
         Configuration config = Configuration.initialize();
         Tester tester = new Tester(config);
 
-//        tester.testMVSubstitution();
-        tester.testBatch();
+        tester.testMVSubstitution();
+//        tester.testBatch();
     }
 
 }
