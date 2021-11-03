@@ -8,6 +8,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -29,7 +30,7 @@ public class QueryExecutor {
     private final SqlValidator validator;
     private final SqlToRelConverter converter;
 
-    private Pattern betweenPattern = Pattern.compile("(\\S*) BETWEEN( \\S*)? (\\S*) \\S* (\\S*)");
+    private final Pattern betweenPattern = Pattern.compile("(\\S*) BETWEEN( \\S*)? (\\S*) \\S* (\\S*)");
 
     public QueryExecutor(Configuration configuration) {
         this.config = configuration.config;
@@ -38,7 +39,7 @@ public class QueryExecutor {
         this.converter = configuration.converter;
     }
 
-    public SqlNode parse(String sql) throws Exception {
+    public SqlNode parse(String sql) {
         SqlParser.ConfigBuilder parserConfig = SqlParser.configBuilder();
         parserConfig.setCaseSensitive(config.caseSensitive());
         parserConfig.setUnquotedCasing(config.unquotedCasing());
@@ -47,10 +48,16 @@ public class QueryExecutor {
 
         SqlParser parser = SqlParser.create(sql, parserConfig.build());
 
-        return parser.parseStmt();
+        try {
+            return parser.parseStmt();
+        } catch (SqlParseException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
-    public SqlNode validate(SqlNode node) throws Exception {
+    public SqlNode validate(SqlNode node) {
         if (hasBetween(node)) {
             String where = replaceBetween(node).replace("`", "\"");
             String query = "SELECT " + String.join(",", selectList(node)) + " FROM " + from(node) + " WHERE " + where;
@@ -59,7 +66,7 @@ public class QueryExecutor {
         return validator.validate(node);
     }
 
-    public SqlNode validate(String q) throws Exception {
+    public SqlNode validate(String q) {
         return validate(parse(q));
     }
 
@@ -68,7 +75,7 @@ public class QueryExecutor {
         return root.rel;
     }
 
-    public RelNode getLogicalPlan(String q) throws Exception {
+    public RelNode getLogicalPlan(String q) {
         return getLogicalPlan(validate(parse(q)));
     }
 
