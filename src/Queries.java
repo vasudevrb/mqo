@@ -20,7 +20,6 @@ public class Queries {
     public static final String q0 = "SELECT \"r_name\" FROM \"public\".\"region\" WHERE \"r_name\" LIKE 'A%'";
 
     public static final String mv2 = "SELECT \"l_discount\", \"l_quantity\" FROM \"lineitem\" WHERE \"l_quantity\" < 24";
-    public static final String mv22 = "SELECT \"l_quantity\" FROM \"lineitem\"";
     public static final String q2 = "SELECT \"l_discount\" FROM \"public\".\"lineitem\" WHERE \"l_quantity\" < 4";
 
     public static final String mv3 = "SELECT \"s_suppkey\", \"s_name\" FROM \"supplier\" WHERE \"s_suppkey\" < 1000";

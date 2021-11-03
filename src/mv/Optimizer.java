@@ -76,7 +76,7 @@ public class Optimizer {
         List<RelNode> substitutes =
                 new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(queryRel))
                         .go(materialization.tableRel);
-        return substitutes;
+        return substitutes.stream().map(this::getPhysicalPlan).toList();
     }
 
     private RelNode canonicalize(RelNode rel) {

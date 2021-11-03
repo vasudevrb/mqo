@@ -29,7 +29,7 @@ public class QueryExecutor {
     private final SqlValidator validator;
     private final SqlToRelConverter converter;
 
-    private Pattern betweenPattern = Pattern.compile("([`a-zA-Z0-9_\"@$#]+) BETWEEN (ASYMMETRIC )?(\\d+) AND (\\d+)");
+    private Pattern betweenPattern = Pattern.compile("(\\S*) BETWEEN( \\S*)? (\\S*) \\S* (\\S*)");
 
     public QueryExecutor(Configuration configuration) {
         this.config = configuration.config;
