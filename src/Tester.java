@@ -29,11 +29,11 @@ public class Tester {
 
     public void testMVSubstitution() throws Exception {
         //Regular execution
-//        RelNode regNode = executor.getLogicalPlan(Queries.q1);
-//        executor.execute(regNode, null);
+        RelNode regNode = executor.getLogicalPlan(Queries.q1);
+        executor.execute(regNode, null);
 
         //MV execution
-        Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("tptp", Queries.mv2, Queries.q2);
+        Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("tptp", Queries.mv1, Queries.q1);
         RelNode n = optimizer.optimize(m).get(0);
         System.out.println(n.explain());
         executor.execute(n, null);

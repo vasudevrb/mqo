@@ -104,6 +104,18 @@ public class Optimizer {
         return hepPlanner.findBestExp();
     }
 
+    private RelNode uncanonicalize(RelNode rel) {
+        HepProgram program =
+                new HepProgramBuilder()
+                        .addRuleInstance(CoreRules.CALC_SPLIT)
+                        .addRuleInstance(CoreRules.CALC_REMOVE)
+                        .build();
+
+        final HepPlanner hepPlanner = new HepPlanner(program);
+        hepPlanner.setRoot(rel);
+        return hepPlanner.findBestExp();
+    }
+
     public RelNode getPhysicalPlan(RelNode relNode, List<RelOptMaterialization> materializations) {
         RuleSet rules = RuleSets.ofList(
                 CoreRules.FILTER_TO_CALC,
@@ -123,6 +135,7 @@ public class Optimizer {
     }
 
     public RelNode getPhysicalPlan(RelNode node) {
-        return getPhysicalPlan(node, Collections.emptyList());
+//        return getPhysicalPlan(node, Collections.emptyList());
+        return uncanonicalize(node);
     }
 }
