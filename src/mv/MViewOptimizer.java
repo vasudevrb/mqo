@@ -1,11 +1,10 @@
 package mv;
 
-import com.google.common.collect.ImmutableList;
 import common.Configuration;
 import common.QueryExecutor;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.materialize.MaterializationService;
+import org.apache.calcite.materialize.MaterializationService.DefaultTableFactory;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.SubstitutionVisitor;
@@ -14,16 +13,16 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.Pair;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import static org.apache.calcite.rel.core.RelFactories.LOGICAL_BUILDER;
 
 public class MViewOptimizer {
     private final SchemaPlus rootSchema;
@@ -43,34 +42,30 @@ public class MViewOptimizer {
         this.validator = new QueryExecutor(programConfig);
     }
 
-    public Pair<RelNode, List<RelOptMaterialization>> getMaterializations(String mv_name, String mv, String q) {
-        List<RelOptMaterialization> materializations = new ArrayList<>();
-        final RelBuilder builder = RelFactories.LOGICAL_BUILDER.create(cluster, catalogReader);
-        final MaterializationService.DefaultTableFactory tableFactory = new MaterializationService.DefaultTableFactory();
+    public RelOptMaterialization materialize(String mViewName, String mViewQuery) {
+        //Create a table with the given materialized view query
+        DefaultTableFactory tableFactory = new DefaultTableFactory();
+        Table table = tableFactory.createTable(CalciteSchema.from(rootSchema), mViewQuery, List.of(schema.getName()));
+        schema.add(mViewName, table);
 
-        final RelNode mvRel = validator.getLogicalPlan(mv);
-        long t1 = System.currentTimeMillis();
-        final Table table = tableFactory.createTable(CalciteSchema.from(rootSchema), mv, ImmutableList.of(schema.getName()));
-        long t2 = System.currentTimeMillis();
+        //Create a logical scan on the table and convert it to enumerable (physical) scan
+        RelBuilder builder = LOGICAL_BUILDER.create(cluster, catalogReader);
+        builder.scan(schema.getName(), mViewName);
+        LogicalTableScan logicalTableScan = (LogicalTableScan) builder.build();
+        EnumerableTableScan replacement = EnumerableTableScan.create(cluster, logicalTableScan.getTable());
 
-        System.out.println("Time taken to create table: " + (t2 - t1) + " ms");
-        schema.add(mv_name, table);
-        builder.scan(schema.getName(), mv_name);
+        RelNode mvRel = validator.getLogicalPlan(mViewQuery);
 
-        final LogicalTableScan logicalTableScan = (LogicalTableScan) builder.build();
-        final EnumerableTableScan replacement = EnumerableTableScan.create(cluster, logicalTableScan.getTable());
-        materializations.add(new RelOptMaterialization(replacement, mvRel, null, ImmutableList.of(schema.getName(), mv_name)));
-
-        return new Pair<>(validator.getLogicalPlan(q), materializations);
+        //RelOptMaterialization records that this table represents this query. Required for substitution
+        return new RelOptMaterialization(replacement, mvRel, null, List.of(schema.getName(), mViewName));
     }
 
-    public List<RelNode> optimize(Pair<RelNode, List<RelOptMaterialization>> mvData) {
-        RelNode queryRel = mvData.left;
-        RelOptMaterialization materialization = mvData.right.get(0);
-        List<RelNode> substitutes =
-                new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(queryRel))
-                        .go(materialization.tableRel);
-        return substitutes.stream().map(this::uncanonicalize).toList();
+    public RelNode substitute(RelOptMaterialization materialization, RelNode query) {
+        //TODO: Return substitutes that are cheapest to execute
+        List<RelNode> substitutes = new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(query))
+                .go(materialization.tableRel);
+        Optional<RelNode> node = substitutes.stream().findFirst().map(this::uncanonicalize);
+        return node.orElse(null);
     }
 
     private RelNode canonicalize(RelNode rel) {

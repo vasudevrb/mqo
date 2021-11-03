@@ -3,26 +3,22 @@ import common.Configuration;
 import common.QueryExecutor;
 import common.QueryUtils;
 import mv.MViewOptimizer;
-import mv.Optimizer2;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.util.Pair;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Tester {
-    private Configuration config;
-    private MViewOptimizer optimizer;
-    private Optimizer2 op2;
-    private QueryExecutor executor;
 
-    public Tester(Configuration config) throws SQLException {
+    private final QueryExecutor executor;
+    private final Configuration config;
+    private final MViewOptimizer optimizer;
+
+    public Tester(Configuration config) {
         this.optimizer = new MViewOptimizer(config);
-        this.op2 = new Optimizer2(config);
         this.executor = new QueryExecutor(config);
         this.config = config;
     }
@@ -33,10 +29,11 @@ public class Tester {
         executor.execute(regNode, null);
 
         //MV execution
-        Pair<RelNode, List<RelOptMaterialization>> m = optimizer.getMaterializations("tptp", Queries.mv1, Queries.q1);
-        RelNode n = optimizer.optimize(m).get(0);
-        System.out.println(n.explain());
-        executor.execute(n, null);
+        RelOptMaterialization materialization = optimizer.materialize("mv0", Queries.mv1);
+        RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(Queries.q1));
+        if (n != null) {
+            executor.execute(n, null);
+        }
 
     }
 
