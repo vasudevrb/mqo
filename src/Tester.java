@@ -2,7 +2,7 @@ import batch.QueryBatcher;
 import common.Configuration;
 import common.QueryExecutor;
 import common.QueryUtils;
-import mv.Optimizer;
+import mv.MViewOptimizer;
 import mv.Optimizer2;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
@@ -16,12 +16,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class Tester {
     private Configuration config;
-    private Optimizer optimizer;
+    private MViewOptimizer optimizer;
     private Optimizer2 op2;
     private QueryExecutor executor;
 
     public Tester(Configuration config) throws SQLException {
-        this.optimizer = new Optimizer(config);
+        this.optimizer = new MViewOptimizer(config);
         this.op2 = new Optimizer2(config);
         this.executor = new QueryExecutor(config);
         this.config = config;

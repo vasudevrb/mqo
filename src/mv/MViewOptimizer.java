@@ -3,8 +3,6 @@ package mv;
 import com.google.common.collect.ImmutableList;
 import common.Configuration;
 import common.QueryExecutor;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService;
@@ -14,7 +12,6 @@ import org.apache.calcite.plan.SubstitutionVisitor;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
-import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
@@ -22,34 +19,31 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.tools.*;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Pair;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class Optimizer {
+public class MViewOptimizer {
     private final SchemaPlus rootSchema;
     private final SchemaPlus schema;
 
     private final QueryExecutor validator;
 
     private final Prepare.CatalogReader catalogReader;
-    private final VolcanoPlanner planner;
     private final RelOptCluster cluster;
 
-    public Optimizer(Configuration programConfig) {
+    public MViewOptimizer(Configuration programConfig) {
         this.rootSchema = programConfig.rootSchema;
         this.schema = programConfig.schema;
         this.catalogReader = programConfig.catalogReader;
-        this.planner = programConfig.planner;
         this.cluster = programConfig.cluster;
 
         this.validator = new QueryExecutor(programConfig);
     }
 
-    public Pair<RelNode, List<RelOptMaterialization>> getMaterializations(String mv_name, String mv, String q) throws Exception {
+    public Pair<RelNode, List<RelOptMaterialization>> getMaterializations(String mv_name, String mv, String q) {
         List<RelOptMaterialization> materializations = new ArrayList<>();
         final RelBuilder builder = RelFactories.LOGICAL_BUILDER.create(cluster, catalogReader);
         final MaterializationService.DefaultTableFactory tableFactory = new MaterializationService.DefaultTableFactory();
@@ -76,7 +70,7 @@ public class Optimizer {
         List<RelNode> substitutes =
                 new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(queryRel))
                         .go(materialization.tableRel);
-        return substitutes.stream().map(this::getPhysicalPlan).toList();
+        return substitutes.stream().map(this::uncanonicalize).toList();
     }
 
     private RelNode canonicalize(RelNode rel) {
@@ -114,28 +108,5 @@ public class Optimizer {
         final HepPlanner hepPlanner = new HepPlanner(program);
         hepPlanner.setRoot(rel);
         return hepPlanner.findBestExp();
-    }
-
-    public RelNode getPhysicalPlan(RelNode relNode, List<RelOptMaterialization> materializations) {
-        RuleSet rules = RuleSets.ofList(
-                CoreRules.FILTER_TO_CALC,
-                CoreRules.PROJECT_TO_CALC,
-                CoreRules.FILTER_CALC_MERGE,
-                CoreRules.PROJECT_CALC_MERGE,
-                EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
-                EnumerableRules.ENUMERABLE_PROJECT_RULE,
-                EnumerableRules.ENUMERABLE_FILTER_RULE,
-                EnumerableRules.ENUMERABLE_CALC_RULE,
-                EnumerableRules.ENUMERABLE_AGGREGATE_RULE
-        );
-
-        Program program = Programs.of(rules);
-        return program.run(planner, relNode,
-                relNode.getTraitSet().plus(EnumerableConvention.INSTANCE), materializations, Collections.emptyList());
-    }
-
-    public RelNode getPhysicalPlan(RelNode node) {
-//        return getPhysicalPlan(node, Collections.emptyList());
-        return uncanonicalize(node);
     }
 }
