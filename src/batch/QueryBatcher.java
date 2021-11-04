@@ -107,6 +107,7 @@ public class QueryBatcher {
             varMap.add(cnfQ1.getCleanMap());
             preds.add(extractPredicates(cnfQ1.asString().replace("`", "")).stream()
                     .flatMap(Collection::stream)
+                    .filter(pr -> !pr.isJoin)
                     .collect(Collectors.toList()));
         }
 

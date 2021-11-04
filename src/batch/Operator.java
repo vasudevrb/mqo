@@ -21,7 +21,7 @@ public class Operator extends Term {
     public List<String> getAllPredicateNames(Function<String, Boolean> exclusion) {
         List<String> pNames = terms.stream()
                 .filter(t -> t instanceof Predicate)
-                .filter(pr -> exclusion.apply(((Predicate) pr).getValue()))
+                .filter(pr -> exclusion.apply(((Predicate) pr).getValue())) //TODO Maybe just check predicate.isJoin instead of string ops
                 .map(t -> ((Predicate) t).getName().replaceAll("`", "\""))
                 .collect(Collectors.toList());
         terms.stream()
