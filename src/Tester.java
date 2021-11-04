@@ -4,12 +4,14 @@ import common.QueryExecutor;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
+import org.apache.commons.lang3.time.StopWatch;
 import test.QueryProvider;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static common.QueryUtils.countRows;
 
 public class Tester {
 
@@ -41,56 +43,42 @@ public class Tester {
     }
 
     public void testBatch() throws Exception {
-        List<String> queries = queryProvider.getAllBatches();
-
+        StopWatch stopWatch = new StopWatch();
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
-        long t3 = System.currentTimeMillis();
+        List<String> queries = queryProvider.getAllBatches();
+
+        System.out.println("Executing queries individually");
+        stopWatch.start();
         for (String s : queries) {
             RelNode n = executor.getLogicalPlan(s);
-//            executor.execute(n, rs -> System.out.println("Row count: " + countRows(rs)));
+            executor.execute(n, rs -> System.out.println("Row count: " + countRows(rs)));
         }
-        long t4 = System.currentTimeMillis();
+        stopWatch.suspend();
+        long indExecTime = stopWatch.getTime();
 
-
-        long t1 = System.currentTimeMillis();
+        System.out.println("Executing queries as a batch");
+        stopWatch.resume();
         List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(queries);
-        long t2 = System.currentTimeMillis();
 
-        System.out.println("Creating a batch took " + (t2 - t1) + " ms");
-
-        List<List<Long>> times = new ArrayList<>();
+        long batchCreationTime = stopWatch.getTime();
+        AtomicLong unbatchTimes = new AtomicLong();
 
         for (QueryBatcher.BatchQuery bq : combined) {
-            long t5 = System.currentTimeMillis();
-
-            AtomicLong t7 = new AtomicLong();
-            AtomicLong t8 = new AtomicLong();
-
             RelNode rn = executor.getLogicalPlan(bq.query);
-
             executor.execute(rn, rs -> {
-                t7.set(System.currentTimeMillis());
+                long x = stopWatch.getTime();
                 queryBatcher.unbatchResults3(bq, rs);
-                t8.set(System.currentTimeMillis());
+                unbatchTimes.addAndGet(stopWatch.getTime() - x);
             });
-            long t6 = System.currentTimeMillis();
-
-            times.add(Arrays.asList(t6 - t5, t8.get() - t7.get()));
         }
-
-
-        long exec_times = times.get(0).get(0) + times.get(1).get(0);
-        long unbatch_times = times.get(0).get(1) + times.get(1).get(1);
-//        long exec_times = times.get(0).get(0);
-//        long unbatch_times = times.get(0).get(1);
-//        long exec_times = 0;
-//        long unbatch_times = 0;
+        stopWatch.stop();
+        long execTime = stopWatch.getTime() - unbatchTimes.get();
 
         System.out.println("===============================");
 
-        System.out.println("Executing queries individually took " + (t4 - t3) + " ms");
-        System.out.println("Executing queries as a batch took " + (t2 - t1) + " + " + (exec_times) + " + " + (unbatch_times) + " = " + (exec_times + unbatch_times + (t2 - t1)) + " ms");
+        System.out.println("Executing queries individually took " + indExecTime + " ms");
+        System.out.println("Executing queries as a batch took " + (batchCreationTime) + " + " + (execTime) + " + " + (unbatchTimes.get()) + " = " + (execTime + unbatchTimes.get() + (batchCreationTime)) + " ms");
         System.out.println("Combined (" + combined.size() + ") are " + Arrays.toString(combined.toArray()));
 
     }
