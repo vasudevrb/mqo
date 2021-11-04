@@ -7,8 +7,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -16,7 +14,6 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelRunner;
 
-import java.io.PrintWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -79,19 +76,29 @@ public class QueryExecutor {
     }
 
     public RelNode getLogicalPlan(String q) {
-        return getLogicalPlan(validate(parse(q)));
+        return getLogicalPlan(validate(q));
+    }
+
+    public RelNode getPhysicalPlan(RelNode node) {
+        RelOptCluster cluster = node.getCluster();
+        VolcanoPlanner planner = (VolcanoPlanner) cluster.getPlanner();
+
+        // Is already a physical node
+        if (!planner.isLogical(node)) {
+            return node;
+        }
+
+        RelNode newRoot = planner.changeTraits(node, cluster.traitSet().replace(EnumerableConvention.INSTANCE));
+        planner.setRoot(newRoot);
+        return planner.findBestExp();
+    }
+
+    public RelNode getPhysicalPlan(String q) {
+        return getPhysicalPlan(getLogicalPlan(q));
     }
 
     public void execute(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
-        RelOptCluster cluster = relNode.getCluster();
-        VolcanoPlanner planner = (VolcanoPlanner) cluster.getPlanner();
-        RelNode newRoot = planner.changeTraits(relNode, cluster.traitSet().replace(EnumerableConvention.INSTANCE));
-        planner.setRoot(newRoot);
-
-        RelNode physicalNode = planner.findBestExp();
-//        physicalNode.explain(new RelWriterImpl(new PrintWriter(System.out), SqlExplainLevel.ALL_ATTRIBUTES, false));
-//        System.out.println("Physical cost is " + QueryUtils.getCost(physicalNode).toString());
-
+        RelNode physicalNode = getPhysicalPlan(relNode);
 
         //TODO: Try making runner global
         RelRunner runner = connection.unwrap(RelRunner.class);
@@ -121,7 +128,8 @@ public class QueryExecutor {
             String predLow = matcher.group(3);
             String predHigh = matcher.group(4);
 
-            where = matcher.replaceAll(matchResult -> matchResult.group(1) + " >= " + predLow + " AND " + predName + " <= " + predHigh);
+            where = matcher.replaceAll(matchResult -> matchResult.group(1) + " >= " + predLow +
+                    " AND " + predName + " <= " + predHigh);
         }
         return where;
     }
