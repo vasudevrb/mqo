@@ -3,6 +3,7 @@ package batch;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Operator extends Term {
     public List<Term> terms;
@@ -22,7 +23,7 @@ public class Operator extends Term {
                 .filter(t -> t instanceof Predicate)
                 .filter(pr -> exclusion.apply(((Predicate) pr).getValue()))
                 .map(t -> ((Predicate) t).getName().replaceAll("`", "\""))
-                .toList();
+                .collect(Collectors.toList());
         terms.stream()
                 .filter(t -> t instanceof Operator)
                 .forEach(t -> pNames.addAll(((Operator) t).getAllPredicateNames(exclusion)));
