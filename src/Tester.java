@@ -1,10 +1,10 @@
 import batch.QueryBatcher;
 import common.Configuration;
 import common.QueryExecutor;
-import common.QueryUtils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
+import test.QueryProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,10 +17,13 @@ public class Tester {
     private final Configuration config;
     private final MViewOptimizer optimizer;
 
+    private final QueryProvider queryProvider;
+
     public Tester(Configuration config) {
         this.optimizer = new MViewOptimizer(config);
         this.executor = new QueryExecutor(config);
         this.config = config;
+        this.queryProvider = new QueryProvider();
     }
 
     public void testMVSubstitution() throws Exception {
@@ -38,51 +41,20 @@ public class Tester {
     }
 
     public void testBatch() throws Exception {
-        String q1 = "SELECT \"l_extendedprice\", \"l_quantity\"" +
-                " FROM \"public\".\"lineitem\"" +
-                " WHERE" +
-                " \"l_shipdate\" >= date '1994-01-01'" +
-                " AND \"l_shipdate\" < date '1994-09-02'" +
-                " AND \"l_discount\" > 0.07" +
-                " AND \"l_quantity\" > 45";
-
-        String q2 = "SELECT \"l_extendedprice\"" +
-                " FROM \"public\".\"lineitem\"" +
-                " WHERE" +
-                " \"l_shipdate\" < date '1994-06-02'" +
-                " AND \"l_shipdate\" > date '1994-01-01'" +
-                " AND \"l_quantity\" > 25";
-
-        String q3 = "SELECT \"s_name\", \"s_suppkey\"" +
-                " FROM \"public\".\"supplier\", \"public\".\"nation\"" +
-                " WHERE \"s_nationkey\" = \"n_nationkey\"" +
-                " AND \"s_suppkey\" < 800";
-
-        String q4 = "SELECT \"s_name\", \"n_name\", \"r_name\"" +
-                " FROM \"public\".\"supplier\", \"public\".\"nation\", \"public\".\"region\"" +
-                " WHERE \"s_nationkey\" = \"n_nationkey\"" +
-                " AND \"n_regionkey\" = \"r_regionkey\"" +
-                " AND \"s_suppkey\" < 1200";
-
-        String q5 = "SELECT \"s_name\", \"n_name\", \"r_name\"" +
-                " FROM \"public\".\"supplier\", \"public\".\"nation\", \"public\".\"region\"" +
-                " WHERE \"s_nationkey\" = \"n_nationkey\"" +
-                " AND \"n_regionkey\" = \"r_regionkey\"" +
-                " AND \"s_suppkey\" < 1500";
+        List<String> queries = queryProvider.getAllBatches();
 
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
         long t3 = System.currentTimeMillis();
-        for (String s : Arrays.asList(q2)) {
+        for (String s : queries) {
             RelNode n = executor.getLogicalPlan(s);
-            System.out.println("Logical cost is " + QueryUtils.getCost(n).toString());
-            executor.execute(n, null);
+//            executor.execute(n, rs -> System.out.println("Row count: " + countRows(rs)));
         }
         long t4 = System.currentTimeMillis();
 
 
         long t1 = System.currentTimeMillis();
-        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(Arrays.asList(q1, q2, q3, q4, q5));
+        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(queries);
         long t2 = System.currentTimeMillis();
 
         System.out.println("Creating a batch took " + (t2 - t1) + " ms");
@@ -96,7 +68,6 @@ public class Tester {
             AtomicLong t8 = new AtomicLong();
 
             RelNode rn = executor.getLogicalPlan(bq.query);
-            System.out.println("Cost of batch is " + QueryUtils.getCost(rn).toString());
 
             executor.execute(rn, rs -> {
                 t7.set(System.currentTimeMillis());

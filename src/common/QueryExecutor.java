@@ -89,8 +89,8 @@ public class QueryExecutor {
         planner.setRoot(newRoot);
 
         RelNode physicalNode = planner.findBestExp();
-        physicalNode.explain(new RelWriterImpl(new PrintWriter(System.out), SqlExplainLevel.ALL_ATTRIBUTES, false));
-        System.out.println("Physical cost is " + QueryUtils.getCost(physicalNode).toString());
+//        physicalNode.explain(new RelWriterImpl(new PrintWriter(System.out), SqlExplainLevel.ALL_ATTRIBUTES, false));
+//        System.out.println("Physical cost is " + QueryUtils.getCost(physicalNode).toString());
 
 
         //TODO: Try making runner global
