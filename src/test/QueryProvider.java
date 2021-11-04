@@ -127,6 +127,10 @@ public class QueryProvider {
         return batches.get(random.nextInt(batches.size()));
     }
 
+    public List<String> getBatch(int index) {
+        return batches.get(index);
+    }
+
     public List<String> getAllBatches() {
         return batches.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }

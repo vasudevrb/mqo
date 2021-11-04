@@ -12,7 +12,7 @@ public class Main {
         Tester tester = new Tester(config);
 
 //        tester.testMVSubstitution();
-        tester.testBatch();
+        tester.testCost();
     }
 
     public static void hideLoggerWarnings() {

@@ -1,7 +1,9 @@
 import batch.QueryBatcher;
 import common.Configuration;
 import common.QueryExecutor;
+import common.QueryUtils;
 import mv.MViewOptimizer;
+import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.commons.lang3.time.StopWatch;
@@ -83,4 +85,29 @@ public class Tester {
 
     }
 
+    public void testCost() throws Exception {
+        List<String> queries = queryProvider.getBatch(1);
+
+        RelOptCost indCost = null;
+        for (String q : queries) {
+            RelNode physicalPlan = executor.getPhysicalPlan(q);
+            if (indCost == null) {
+                indCost = QueryUtils.getCost(physicalPlan);
+            } else {
+                indCost.plus(QueryUtils.getCost(physicalPlan));
+            }
+        }
+
+        QueryBatcher batcher = new QueryBatcher(config, executor);
+        QueryBatcher.BatchQuery batched = batcher.batch(queries).get(0);
+        RelNode physicalPlan = executor.getPhysicalPlan(batched.query);
+
+        RelOptCost batchCost = QueryUtils.getCost(physicalPlan);
+
+        if (indCost.isLe(batchCost)) {
+            System.out.println("Better to execute individually");
+        } else {
+            System.out.println("Better to batch");
+        }
+    }
 }
