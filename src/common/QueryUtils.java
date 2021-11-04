@@ -1,5 +1,8 @@
 package common;
 
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
 
@@ -37,5 +40,11 @@ public class QueryUtils {
         }
 
         return count;
+    }
+
+    public static RelOptCost getCost(RelNode node) {
+        //TODO Find a way to give proper row counts for tables. Everything upstream should work hopefully!
+        RelMetadataQuery metadataProvider = node.getCluster().getMetadataQuery();
+        return metadataProvider.getCumulativeCost(node);
     }
 }

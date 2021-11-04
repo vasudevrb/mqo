@@ -73,8 +73,10 @@ public class Tester {
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
         long t3 = System.currentTimeMillis();
-        for (String s : Arrays.asList(q1, q2, q4, q5)) {
-            executor.execute(executor.getLogicalPlan(s), rs -> System.out.println("Count is " + QueryUtils.countRows(rs)));
+        for (String s : Arrays.asList(q2)) {
+            RelNode n = executor.getLogicalPlan(s);
+            System.out.println("Logical cost is " + QueryUtils.getCost(n).toString());
+            executor.execute(n, null);
         }
         long t4 = System.currentTimeMillis();
 
@@ -94,6 +96,8 @@ public class Tester {
             AtomicLong t8 = new AtomicLong();
 
             RelNode rn = executor.getLogicalPlan(bq.query);
+            System.out.println("Cost of batch is " + QueryUtils.getCost(rn).toString());
+
             executor.execute(rn, rs -> {
                 t7.set(System.currentTimeMillis());
                 queryBatcher.unbatchResults3(bq, rs);

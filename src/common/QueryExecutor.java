@@ -7,6 +7,8 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -14,6 +16,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelRunner;
 
+import java.io.PrintWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -86,6 +89,9 @@ public class QueryExecutor {
         planner.setRoot(newRoot);
 
         RelNode physicalNode = planner.findBestExp();
+        physicalNode.explain(new RelWriterImpl(new PrintWriter(System.out), SqlExplainLevel.ALL_ATTRIBUTES, false));
+        System.out.println("Physical cost is " + QueryUtils.getCost(physicalNode).toString());
+
 
         //TODO: Try making runner global
         RelRunner runner = connection.unwrap(RelRunner.class);

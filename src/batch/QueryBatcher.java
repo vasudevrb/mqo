@@ -273,6 +273,7 @@ public class QueryBatcher {
         return calls;
     }
 
+    //TODO Use queryutil impl because this has errors when where is empty
     public String where(SqlNode node) {
         return ((SqlSelect) node).getWhere().toString();
     }
