@@ -228,7 +228,9 @@ public class QueryBatcher {
     }
 
     public boolean canMerge(SqlNode node1, SqlNode node2) {
-        return from(node1).containsAll(from(node2));
+        List<String> from1 = from(node1);
+        List<String> from2 = from(node2);
+        return from1.size() == from2.size() && from1.containsAll(from2);
     }
 
     public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
@@ -345,6 +347,7 @@ public class QueryBatcher {
         } else if (predicates.size() == 2) {
             buildCoveringPredicate2(predicates.get(0), predicates.get(1), operator);
         } else {
+            //TODO Handle 3 predicate case
             operator.terms.addAll(predicates);
         }
     }
