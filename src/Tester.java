@@ -31,13 +31,15 @@ public class Tester {
     }
 
     public void testMVSubstitution() throws Exception {
+        List<String> matQueries = queryProvider.getMaterializable(0);
+
         //Regular execution
-        RelNode regNode = executor.getLogicalPlan(Queries.q1);
+        RelNode regNode = executor.getLogicalPlan(matQueries.get(0));
         executor.execute(regNode, null);
 
         //MV execution
-        RelOptMaterialization materialization = optimizer.materialize("mv0", Queries.mv1);
-        RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(Queries.q1));
+        RelOptMaterialization materialization = optimizer.materialize("mv0", matQueries.get(0));
+        RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(matQueries.get(1)));
         if (n != null) {
             executor.execute(n, null);
         }

@@ -73,6 +73,15 @@ public class QueryProvider {
             AND "l_quantity" < 14
             """;
 
+    private static final String m1q3 = """
+            SELECT "l_discount" \
+            FROM "public"."lineitem" \
+            WHERE "l_shipdate" >= date '1994-01-01' \
+            AND "l_shipdate" < date '1997-06-01' \
+            AND "l_discount" between 0.06 AND 0.07 \
+            AND "l_quantity" < 14
+            """;
+
     private static final String m2q1 = """
             SELECT "r_name" \
             FROM "public"."region"
@@ -117,15 +126,11 @@ public class QueryProvider {
     );
 
     private final List<List<String>> materializables = List.of(
-            List.of(m1q1, m1q2),
+            List.of(m1q1, m1q2, m1q3),
             List.of(m2q1, m2q2),
             List.of(m3q1, m3q2),
             List.of(m4q1, m4q2)
     );
-
-    public List<String> getRandomBatch() {
-        return batches.get(random.nextInt(batches.size()));
-    }
 
     public List<String> getBatch(int index) {
         return batches.get(index);
@@ -135,7 +140,11 @@ public class QueryProvider {
         return batches.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
-    public List<String> getRandomMaterializable() {
-        return materializables.get(random.nextInt(materializables.size()));
+    public List<String> getMaterializable(int index) {
+        return materializables.get(index);
+    }
+
+    public List<String> getAllMaterializables() {
+        return materializables.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 }
