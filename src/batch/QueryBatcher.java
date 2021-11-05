@@ -28,6 +28,8 @@ public class QueryBatcher {
     private final QueryExecutor validator;
     private final Evaluator evaluator;
 
+    //TODO Add support for 'SELECT * FROM' queries
+
     public QueryBatcher(Configuration configuration, QueryExecutor validator) {
         this.validator = validator;
         this.configuration = configuration;
