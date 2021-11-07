@@ -112,4 +112,8 @@ public class Tester {
             System.out.println("Better to batch");
         }
     }
+
+    public void testListenerThreads() {
+        queryProvider.listen(s -> System.out.println("Got " + s));
+    }
 }

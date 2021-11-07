@@ -49,6 +49,14 @@ public class Utils {
         return sb.toString();
     }
 
+    public static int getRandomGaussian() {
+        return (int) (5 + rnd.nextGaussian() * 3) * 1000;
+    }
+
+    public static int getRandomNumber(int limit) {
+        return rnd.nextInt(limit);
+    }
+
     public static void main(String[] args) {
         System.out.println(isFloat("3.4134"));
     }

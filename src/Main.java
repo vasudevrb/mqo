@@ -12,7 +12,8 @@ public class Main {
         Tester tester = new Tester(config);
 
 //        tester.testMVSubstitution();
-        tester.testCost();
+//        tester.testCost();
+        tester.testListenerThreads();
     }
 
     public static void hideLoggerWarnings() {

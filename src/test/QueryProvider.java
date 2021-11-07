@@ -1,8 +1,13 @@
 package test;
 
+import common.Utils;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class QueryProvider {
@@ -132,6 +137,9 @@ public class QueryProvider {
             List.of(m4q1, m4q2)
     );
 
+    private Provider provider;
+    private Receiver receiver;
+
     public List<String> getBatch(int index) {
         return batches.get(index);
     }
@@ -146,5 +154,74 @@ public class QueryProvider {
 
     public List<String> getAllMaterializables() {
         return materializables.stream().flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public void listen(Consumer<String> consumer) {
+        BlockingQueue<String> blockingQueue = new LinkedBlockingDeque<>();
+        provider = new Provider(blockingQueue);
+        receiver = new Receiver(provider, blockingQueue, consumer);
+
+        new Thread(provider).start();
+        new Thread(receiver).start();
+    }
+
+    public void stopListening() {
+        provider.stop();
+        receiver.stop();
+    }
+
+    public static class Provider extends ThreadTask {
+        private final BlockingQueue<String> queue;
+        private int i = 0;
+
+        public Provider(BlockingQueue<String> queue) {
+            this.queue = queue;
+        }
+
+        @Override
+        public void runUntilStopped() throws InterruptedException {
+            Thread.sleep(Utils.getRandomNumber(1 * 1000));
+            queue.put(String.valueOf(i));
+            i++;
+        }
+    }
+
+    public static class Receiver extends ThreadTask {
+        Provider provider;
+        Consumer<String> consumer;
+        BlockingQueue<String> queue;
+
+        public Receiver(Provider provider, BlockingQueue<String> queue, Consumer<String> consumer) {
+            this.provider = provider;
+            this.consumer = consumer;
+            this.queue = queue;
+        }
+
+        @Override
+        public void runUntilStopped() throws InterruptedException {
+            String val = queue.take();
+            consumer.accept(val);
+        }
+    }
+
+    abstract static class ThreadTask implements Runnable {
+        private boolean shouldStop = false;
+
+        public abstract void runUntilStopped() throws InterruptedException;
+
+        @Override
+        public void run() {
+            while (!shouldStop) {
+                try {
+                    runUntilStopped();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        public void stop() {
+            this.shouldStop = true;
+        }
     }
 }
