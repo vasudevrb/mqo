@@ -46,6 +46,27 @@ public class Tester {
 
     }
 
+    public void testMVSubstitution2() throws Exception {
+        List<String> matQueries = queryProvider.getMaterializable(0);
+
+        //Regular execution
+        for (String q: matQueries) {
+            RelNode regNode = executor.getLogicalPlan(q);
+            executor.execute(regNode, null);
+        }
+
+        //MV execution
+//        RelOptMaterialization materialization = optimizer.materialize("mv0", matQueries.get(0));
+//        executor.execute(materialization.queryRel, null);
+//        for (String q: matQueries.subList(1, matQueries.size())) {
+//            RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(q));
+//            if (n != null) {
+//                executor.execute(n, null);
+//            }
+//        }
+
+    }
+
     public void testBatch() throws Exception {
         StopWatch stopWatch = new StopWatch();
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);

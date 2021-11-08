@@ -60,16 +60,16 @@ public class QueryProvider {
             AND "s_suppkey" < 1500
             """;
 
-    private static final String m1q1 = """
+    private static final String m0q1 = """
             SELECT "l_extendedprice", "l_shipdate", "l_discount", "l_quantity" \
             FROM "public"."lineitem" \
             WHERE "l_shipdate" >= date '1994-01-01' \
             AND "l_shipdate" < date '1995-01-01' \
-            AND "l_discount" BETWEEN 0.05 AND 0.08 \
+            AND "l_discount" >= 0.05 \
             AND "l_quantity" < 24
             """;
 
-    private static final String m1q2 = """
+    private static final String m0q2 = """
             SELECT "l_extendedprice" \
             FROM "public"."lineitem" \
             WHERE "l_shipdate" >= date '1994-01-01' \
@@ -78,13 +78,22 @@ public class QueryProvider {
             AND "l_quantity" < 14
             """;
 
-    private static final String m1q3 = """
+    private static final String m0q3 = """
             SELECT "l_discount" \
             FROM "public"."lineitem" \
-            WHERE "l_shipdate" >= date '1994-01-01' \
-            AND "l_shipdate" < date '1997-06-01' \
+            WHERE "l_shipdate" >= date '1994-04-01' \
+            AND "l_shipdate" < date '1994-12-01' \
+            AND "l_discount" > 0.08 \
+            AND "l_quantity" < 20
+            """;
+
+    private static final String m0q4 = """
+            SELECT "l_shipdate" \
+            FROM "public"."lineitem" \
+            WHERE "l_shipdate" >= date '1994-03-01' \
+            AND "l_shipdate" < date '1994-06-01' \
             AND "l_discount" between 0.06 AND 0.07 \
-            AND "l_quantity" < 14
+            AND "l_quantity" < 18
             """;
 
     private static final String m2q1 = """
@@ -131,7 +140,7 @@ public class QueryProvider {
     );
 
     private final List<List<String>> materializables = List.of(
-            List.of(m1q1, m1q2, m1q3),
+            List.of(m0q1, m0q2, m0q3, m0q4),
             List.of(m2q1, m2q2),
             List.of(m3q1, m3q2),
             List.of(m4q1, m4q2)

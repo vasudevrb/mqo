@@ -43,6 +43,7 @@ public class MViewOptimizer {
     }
 
     public RelOptMaterialization materialize(String mViewName, String mViewQuery) {
+        long t1 = System.currentTimeMillis();
         //Create a table with the given materialized view query
         DefaultTableFactory tableFactory = new DefaultTableFactory();
         Table table = tableFactory.createTable(CalciteSchema.from(rootSchema), mViewQuery, List.of(schema.getName()));
@@ -57,15 +58,31 @@ public class MViewOptimizer {
         RelNode mvRel = validator.getLogicalPlan(mViewQuery);
 
         //RelOptMaterialization records that this table represents this query. Required for substitution
-        return new RelOptMaterialization(replacement, mvRel, null, List.of(schema.getName(), mViewName));
+        RelOptMaterialization m = new RelOptMaterialization(replacement, mvRel, null, List.of(schema.getName(), mViewName));
+
+        long t2 = System.currentTimeMillis();
+        System.out.println("Materializing view took " + (t2 - t1) + " ms");
+
+        return m;
     }
 
     public RelNode substitute(RelOptMaterialization materialization, RelNode query) {
         //TODO: Return substitutes that are cheapest to execute
+        long t1 = System.currentTimeMillis();
         List<RelNode> substitutes = new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(query))
                 .go(materialization.tableRel);
-        Optional<RelNode> node = substitutes.stream().findFirst().map(this::uncanonicalize);
-        return node.orElse(null);
+        RelNode node = substitutes.stream().findFirst().map(this::uncanonicalize).orElse(null);
+
+        if (node == null) {
+            return null;
+        }
+
+
+
+
+        long t2 = System.currentTimeMillis();
+        System.out.println("Matching MV with query took " + (t2 - t1) + " ms");
+        return node;
     }
 
     private RelNode canonicalize(RelNode rel) {
