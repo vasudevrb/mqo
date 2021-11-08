@@ -8,24 +8,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.*;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
 
 public class CostHelper {
-
-    private static Map<String, Integer> cardinalities;
-
-    static {
-        cardinalities = new HashMap<>();
-        cardinalities.put("lineitem", 6_000_000);
-        cardinalities.put("orders", 1_500_000);
-        cardinalities.put("customer", 150_000);
-        cardinalities.put("partsupp", 800_000);
-        cardinalities.put("supplier", 10_000);
-        cardinalities.put("part", 200_000);
-        cardinalities.put("nation", 25);
-        cardinalities.put("region", 5);
-    }
 
     public static RelOptCost getCost(RelNode node, boolean isBatch) {
         RelOptCluster cl = node.getCluster();

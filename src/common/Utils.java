@@ -49,15 +49,25 @@ public class Utils {
         return sb.toString();
     }
 
+    static Random rnd2 = new Random();
+
     public static int getRandomGaussian() {
-        return (int) (5 + rnd.nextGaussian() * 3) * 1000;
+        return (int) (5 + rnd2.nextGaussian() * 3) * 1000;
     }
 
     public static int getRandomNumber(int limit) {
-        return rnd.nextInt(limit);
+        return rnd2.nextInt(limit);
+    }
+
+    public static int getRandomNumber(int low, int high) {
+        return rnd2.nextInt(low, high);
     }
 
     public static void main(String[] args) {
         System.out.println(isFloat("3.4134"));
+    }
+
+    public static double getRandomNumber(double low, double high) {
+        return rnd2.nextDouble() * (high - low) + low;
     }
 }

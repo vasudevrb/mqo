@@ -180,7 +180,8 @@ public class QueryProvider {
 
         @Override
         public void runUntilStopped() throws InterruptedException {
-            Thread.sleep(Utils.getRandomNumber(1 * 1000));
+            //TODO: Try gaussian but with rejection sampling
+            Thread.sleep(Utils.getRandomNumber(4 * 1000));
             queue.put(String.valueOf(i));
             i++;
         }
