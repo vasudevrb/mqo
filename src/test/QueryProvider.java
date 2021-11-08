@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class QueryProvider {
 
-    private static final String b1q1 = """
+    private static final String b0q1 = """
             SELECT "l_extendedprice", "l_quantity" \
             FROM "public"."lineitem" \
             WHERE "l_shipdate" >= date '1994-01-01' \
@@ -21,7 +21,7 @@ public class QueryProvider {
             AND "l_quantity" > 45
             """;
 
-    private static final String b1q2 = """
+    private static final String b0q2 = """
             SELECT "l_discount" \
             FROM "public"."lineitem"  \
             WHERE "l_shipdate" < date '1994-06-02' \
@@ -29,7 +29,7 @@ public class QueryProvider {
             AND "l_quantity" > 25
             """;
 
-    private static final String b2q1 = """
+    private static final String b1q1 = """
             SELECT "s_name", "s_suppkey" \
             FROM "public"."supplier", "public"."nation" \
             WHERE "s_nationkey" = "n_nationkey" \
@@ -37,14 +37,14 @@ public class QueryProvider {
             OR "s_suppkey" > 900)
             """;
 
-    private static final String b2q2 = """
+    private static final String b1q2 = """
             SELECT "s_name", "s_suppkey" \
             FROM "public"."supplier", "public"."nation" \
             WHERE "s_nationkey" = "n_nationkey" \
             AND "s_suppkey" < 100
             """;
 
-    private static final String b3q1 = """
+    private static final String b2q1 = """
             SELECT "s_name", "n_name", "r_name" \
             FROM "public"."supplier", "public"."nation", "public"."region" \
             WHERE "s_nationkey" = "n_nationkey" \
@@ -52,7 +52,7 @@ public class QueryProvider {
             AND "s_suppkey" < 1200
             """;
 
-    private static final String b3q2 = """
+    private static final String b2q2 = """
             SELECT "s_name", "n_name", "r_name" \
             FROM "public"."supplier", "public"."nation", "public"."region" \
             WHERE "s_nationkey" = "n_nationkey" \
@@ -96,36 +96,36 @@ public class QueryProvider {
             AND "l_quantity" < 18
             """;
 
-    private static final String m2q1 = """
+    private static final String m1q1 = """
             SELECT "r_name" \
             FROM "public"."region"
             """;
 
-    private static final String m2q2 = """
+    private static final String m1q2 = """
             SELECT "r_name" \
             FROM "public"."region" \
             WHERE "r_name" LIKE 'A%'
             """;
 
-    private static final String m3q1 = """
+    private static final String m2q1 = """
             SELECT "l_discount", "l_quantity" \
             FROM "lineitem" \
             WHERE "l_quantity" < 24
             """;
 
-    private static final String m3q2 = """
+    private static final String m2q2 = """
             SELECT "l_discount" \
             FROM "public"."lineitem" \
             WHERE "l_quantity" < 4
             """;
 
-    private static final String m4q1 = """
+    private static final String m3q1 = """
             SELECT "s_suppkey", "s_name" \
             FROM "supplier" \
             WHERE "s_suppkey" < 1000
             """;
 
-    private static final String m4q2 = """
+    private static final String m3q2 = """
             SELECT "s_name" \
             FROM "public"."supplier" \
             WHERE "s_suppkey" < 100
@@ -134,16 +134,16 @@ public class QueryProvider {
     private final Random random = new Random();
 
     private final List<List<String>> batches = List.of(
+            List.of(b0q1, b0q2),
             List.of(b1q1, b1q2),
-            List.of(b2q1, b2q2),
-            List.of(b3q1, b3q2)
+            List.of(b2q1, b2q2)
     );
 
     private final List<List<String>> materializables = List.of(
             List.of(m0q1, m0q2, m0q3, m0q4),
+            List.of(m1q1, m1q2),
             List.of(m2q1, m2q2),
-            List.of(m3q1, m3q2),
-            List.of(m4q1, m4q2)
+            List.of(m3q1, m3q2)
     );
 
     private Provider provider;

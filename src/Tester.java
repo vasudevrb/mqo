@@ -127,13 +127,13 @@ public class Tester {
     public void testCost() throws Exception {
         List<String> queries = queryProvider.getBatch(2);
 
-        RelOptCost indCost = null;
+        RelOptCost sumIndCost = null;
         for (String q : queries) {
             RelNode plan = executor.getLogicalPlan(q);
-            if (indCost == null) {
-                indCost = QueryUtils.getCost(plan);
+            if (sumIndCost == null) {
+                sumIndCost = QueryUtils.getCost(plan);
             } else {
-                indCost.plus(QueryUtils.getCost(plan));
+                sumIndCost.plus(QueryUtils.getCost(plan));
             }
         }
 
@@ -143,7 +143,7 @@ public class Tester {
 
         RelOptCost batchCost = QueryUtils.getBatchCost(plan);
 
-        if (indCost.isLe(batchCost)) {
+        if (sumIndCost.isLe(batchCost)) {
             System.out.println("Better to execute individually");
         } else {
             System.out.println("Better to batch");
