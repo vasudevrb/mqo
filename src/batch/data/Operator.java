@@ -1,4 +1,4 @@
-package batch;
+package batch.data;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,8 @@
 package batch;
 
 import batch.data.BatchedQuery;
+import batch.data.Operator;
+import batch.data.Predicate;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
@@ -16,8 +18,8 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static batch.Operator.Type.AND;
-import static batch.Operator.Type.OR;
+import static batch.data.Operator.Type.AND;
+import static batch.data.Operator.Type.OR;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang.StringUtils.replace;
 import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;

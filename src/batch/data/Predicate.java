@@ -1,4 +1,4 @@
-package batch;
+package batch.data;
 
 import common.Utils;
 import org.apache.commons.lang.StringUtils;
