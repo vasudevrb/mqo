@@ -1,5 +1,6 @@
 package batch;
 
+import batch.data.BatchedQuery;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.parsers.ExprParser;
 import com.bpodgursky.jbool_expressions.rules.RuleSet;
@@ -44,8 +45,8 @@ public class QueryBatcher {
         );
     }
 
-    public List<BatchQuery> batch(List<String> queries) throws Exception {
-        ArrayList<BatchQuery> batchedQueries = new ArrayList<>();
+    public List<BatchedQuery> batch(List<String> queries) throws Exception {
+        ArrayList<BatchedQuery> batchedQueries = new ArrayList<>();
         Map<String, SqlNode> batchedQueryNodes = new HashMap<>();
 
         if (queries.size() == 0 || queries.size() == 1) {
@@ -55,10 +56,10 @@ public class QueryBatcher {
         SqlNode n1 = validator.validate(queries.get(0));
         SqlNode n2 = validator.validate(queries.get(1));
         if (canMerge(n1, n2)) {
-            batchedQueries.add(new BatchQuery(getCombinedQueryString(n1, n2), asList(0, 1), asList(n1, n2)));
+            batchedQueries.add(new BatchedQuery(getCombinedQueryString(n1, n2), asList(0, 1), asList(n1, n2)));
         } else {
-            batchedQueries.add(new BatchQuery(getQueryString(n1), asList(0), asList(n1)));
-            batchedQueries.add(new BatchQuery(getQueryString(n2), asList(1), asList(n2)));
+            batchedQueries.add(new BatchedQuery(getQueryString(n1), asList(0), asList(n1)));
+            batchedQueries.add(new BatchedQuery(getQueryString(n2), asList(1), asList(n2)));
         }
         int k = 2;
 
@@ -66,22 +67,22 @@ public class QueryBatcher {
             boolean added = false;
             SqlNode n3 = validator.validate(queries.get(k));
             for (int l = batchedQueries.size() - 1; l >= 0; l--) {
-                BatchQuery bq = batchedQueries.get(l);
+                BatchedQuery bq = batchedQueries.get(l);
 
                 SqlNode n4;
-                if (batchedQueryNodes.containsKey(bq.query)) {
-                    n4 = batchedQueryNodes.get(bq.query);
+                if (batchedQueryNodes.containsKey(bq.sql)) {
+                    n4 = batchedQueryNodes.get(bq.sql);
                 } else {
-                    n4 = validator.validate(bq.query);
-                    batchedQueryNodes.put(bq.query, n4);
+                    n4 = validator.validate(bq.sql);
+                    batchedQueryNodes.put(bq.sql, n4);
                 }
 
                 if (canMerge(n3, n4)) {
                     added = true;
                     batchedQueries.remove(l);
-                    batchedQueryNodes.remove(bq.query);
+                    batchedQueryNodes.remove(bq.sql);
 
-                    bq.query = getCombinedQueryString(n3, n4);
+                    bq.sql = getCombinedQueryString(n3, n4);
                     bq.indexes.add(k);
                     bq.parts.add(n3);
                     batchedQueries.add(bq);
@@ -90,7 +91,7 @@ public class QueryBatcher {
             }
 
             if (!added) {
-                batchedQueries.add(new BatchQuery(getQueryString(n3), asList(k), asList(n3)));
+                batchedQueries.add(new BatchedQuery(getQueryString(n3), asList(k), asList(n3)));
             }
             k++;
         }
@@ -98,7 +99,7 @@ public class QueryBatcher {
         return batchedQueries.stream().filter(bq -> bq.indexes.size() > 1).collect(Collectors.toList());
     }
 
-    public void unbatchResults3(BatchQuery bq, ResultSet rs) {
+    public void unbatchResults3(BatchedQuery bq, ResultSet rs) {
         ArrayList<String> cnfs = new ArrayList<>();
         List<Map<String, String>> varMap = new ArrayList<>();
         List<List<Predicate>> preds = new ArrayList<>();
@@ -453,26 +454,6 @@ public class QueryBatcher {
 
     private boolean isLiteral(SqlBasicCall call, int index) {
         return call.operand(index).getKind().equals(SqlKind.LITERAL);
-    }
-
-    public static class BatchQuery {
-        public String query;
-        public ArrayList<Integer> indexes;
-        public ArrayList<SqlNode> parts;
-
-        public BatchQuery(String query, List<Integer> indexes, List<SqlNode> parts) {
-            this.query = query;
-            this.indexes = new ArrayList<>(indexes);
-            this.parts = new ArrayList<>(parts);
-        }
-
-        @Override
-        public String toString() {
-            return "BatchQuery{" +
-                    "query='" + query + '\'' +
-                    ", indexes=" + Arrays.toString(indexes.toArray()) +
-                    '}';
-        }
     }
 
     public static class Normaliser {

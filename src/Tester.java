@@ -1,4 +1,5 @@
 import batch.QueryBatcher;
+import batch.data.BatchedQuery;
 import common.Configuration;
 import common.QueryExecutor;
 import common.QueryUtils;
@@ -66,26 +67,10 @@ public class Tester {
 
     }
 
-    public void testBatchSimple() throws Exception {
-        QueryBatcher queryBatcher = new QueryBatcher(config, executor);
-        List<String> queries = queryProvider.getAllBatches();
-
-        for (String s : queries) {
-            RelNode n = executor.getLogicalPlan(s);
-            executor.execute(n, rs -> System.out.println("Row count: " + countRows(rs)));
-        }
-
-        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(queries);
-        for (QueryBatcher.BatchQuery bq : combined) {
-            RelNode rn = executor.getLogicalPlan(bq.query);
-            executor.execute(rn, rs -> queryBatcher.unbatchResults3(bq, rs));
-        }
-    }
-
     public void testBatch() throws Exception {
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
 
-        List<String> queries = queryProvider.getBatch(1);
+        List<String> queries = queryProvider.getBatch(0);
 
         System.out.println("Executing queries individually");
         long t1 = System.currentTimeMillis();
@@ -98,15 +83,15 @@ public class Tester {
         System.out.println("--------------------------------");
         System.out.println("Executing queries as a batch");
         t1 = System.currentTimeMillis();
-        List<QueryBatcher.BatchQuery> combined = queryBatcher.batch(queries);
+        List<BatchedQuery> combined = queryBatcher.batch(queries);
         long batchCreationTime = System.currentTimeMillis() - t1;
 
         long execTime = 0;
         AtomicLong unbatchTime = new AtomicLong();
 
-        for (QueryBatcher.BatchQuery bq : combined) {
+        for (BatchedQuery bq : combined) {
             long t2 = System.currentTimeMillis();
-            RelNode rn = executor.getLogicalPlan(bq.query);
+            RelNode rn = executor.getLogicalPlan(bq.sql);
             executor.execute(rn, rs -> {
                 long t3 = System.currentTimeMillis();
                 queryBatcher.unbatchResults3(bq, rs);
@@ -138,8 +123,8 @@ public class Tester {
         }
 
         QueryBatcher batcher = new QueryBatcher(config, executor);
-        QueryBatcher.BatchQuery batched = batcher.batch(queries).get(0);
-        RelNode plan = executor.getLogicalPlan(batched.query);
+        BatchedQuery batched = batcher.batch(queries).get(0);
+        RelNode plan = executor.getLogicalPlan(batched.sql);
 
         RelOptCost batchCost = QueryUtils.getBatchCost(plan);
 
