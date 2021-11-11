@@ -296,15 +296,11 @@ public class QueryBatcher {
 
     private List<List<Predicate>> clean(List<List<Predicate>> pr) {
         //Filter only those conditions that have the same name
-        for (List<Predicate> preds : pr) {
-            Iterator<Predicate> predIterator = preds.iterator();
-            String predName = "";
-            while (predIterator.hasNext()) {
-                if (predName.isEmpty()) {
-                    predName = predIterator.next().getName();
-                } else if (!predName.equals(predIterator.next().getName())) {
-                    predIterator.remove();
-                }
+        for (int i = pr.size() - 1; i >= 0; i--) {
+            List<Predicate> preds = pr.get(i);
+            boolean shouldRemove = preds.stream().map(Predicate::getName).collect(Collectors.toSet()).size() > 1;
+            if (shouldRemove) {
+                pr.remove(i);
             }
         }
 

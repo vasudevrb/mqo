@@ -9,8 +9,11 @@ public class Main {
         hideLoggerWarnings();
 
         Configuration config = Configuration.initialize();
-        Window window = new Window(config);
-        window.run();
+//        Window window = new Window(config);
+//        window.run();
+
+        Tester tester = new Tester(config);
+        tester.testBatch();
     }
 
     public static void hideLoggerWarnings() {

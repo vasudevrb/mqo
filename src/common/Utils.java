@@ -6,6 +6,11 @@ import java.util.Random;
 
 public class Utils {
 
+    public static String getPrintableSql(String sql) {
+        return sql.replace(" FROM ", "\nFROM ")
+                .replace(" WHERE ", "\nWHERE ");
+    }
+
     public static boolean isInt(String val) {
         return StringUtils.isNumeric(val);
     }
