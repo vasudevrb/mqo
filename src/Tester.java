@@ -2,9 +2,7 @@ import batch.QueryBatcher;
 import batch.data.BatchedQuery;
 import common.Configuration;
 import common.QueryExecutor;
-import common.QueryUtils;
 import mv.MViewOptimizer;
-import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import test.QueryProvider;
@@ -43,28 +41,6 @@ public class Tester {
         if (n != null) {
             executor.execute(n, null);
         }
-
-    }
-
-    public void testMVSubstitution2() throws Exception {
-        List<String> matQueries = queryProvider.getMaterializable(0);
-
-        //Regular execution
-        for (String q: matQueries) {
-            RelNode regNode = executor.getLogicalPlan(q);
-            executor.execute(regNode, null);
-        }
-
-        //MV execution
-//        RelOptMaterialization materialization = optimizer.materialize("mv0", matQueries.get(0));
-//        executor.execute(materialization.queryRel, null);
-//        for (String q: matQueries.subList(1, matQueries.size())) {
-//            RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(q));
-//            if (n != null) {
-//                executor.execute(n, null);
-//            }
-//        }
-
     }
 
     public void testBatch() throws Exception {
@@ -107,35 +83,5 @@ public class Tester {
         System.out.println("Executing queries as a batch took " + (batchCreationTime) + " + " + (execTime) + " + " + (unbatchTime.get()) + " = " + (execTime + unbatchTime.get() + (batchCreationTime)) + " ms");
         System.out.println("Combined (" + combined.size() + ") are " + Arrays.toString(combined.toArray()));
 
-    }
-
-    public void testCost() throws Exception {
-        List<String> queries = queryProvider.getBatch(2);
-
-        RelOptCost sumIndCost = null;
-        for (String q : queries) {
-            RelNode plan = executor.getLogicalPlan(q);
-            if (sumIndCost == null) {
-                sumIndCost = QueryUtils.getCost(plan);
-            } else {
-                sumIndCost.plus(QueryUtils.getCost(plan));
-            }
-        }
-
-        QueryBatcher batcher = new QueryBatcher(config, executor);
-        BatchedQuery batched = batcher.batch(queries).get(0);
-        RelNode plan = executor.getLogicalPlan(batched.sql);
-
-        RelOptCost batchCost = QueryUtils.getBatchCost(plan);
-
-        if (sumIndCost.isLe(batchCost)) {
-            System.out.println("Better to execute individually");
-        } else {
-            System.out.println("Better to batch");
-        }
-    }
-
-    public void testListenerThreads() {
-        queryProvider.listen(s -> System.out.println("Got " + s));
     }
 }

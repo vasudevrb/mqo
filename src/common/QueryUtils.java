@@ -1,5 +1,6 @@
 package common;
 
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
@@ -42,10 +43,7 @@ public class QueryUtils {
     }
 
     public static RelOptCost getCost(RelNode node) {
-        return CostHelper.getCost(node, false);
-    }
-
-    public static RelOptCost getBatchCost(RelNode node) {
-        return CostHelper.getCost(node, true);
+        RelOptCluster cluster = node.getCluster();
+        return cluster.getMetadataQuery().getCumulativeCost(node);
     }
 }
