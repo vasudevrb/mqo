@@ -349,8 +349,33 @@ public class QueryBatcher {
             operator.addTerm(predicates.get(0));
         } else if (predicates.size() == 2) {
             buildCoveringPredicate2(predicates.get(0), predicates.get(1), operator);
+        } else if (predicates.size() == 3) {
+            buildCoveringPredicate2(predicates.get(0), predicates.get(1), operator);
+            if (operator.terms.size() > 1) {
+                operator.terms.clear();
+            } else if(operator.terms.size() == 1) {
+                operator.terms.add(predicates.get(2));
+                return;
+            }
+
+            buildCoveringPredicate2(predicates.get(0), predicates.get(2), operator);
+            if (operator.terms.size() > 1) {
+                operator.terms.clear();
+            } else if(operator.terms.size() == 1) {
+                operator.terms.add(predicates.get(1));
+                return;
+            }
+
+            buildCoveringPredicate2(predicates.get(1), predicates.get(2), operator);
+            if (operator.terms.size() > 1) {
+                operator.terms.clear();
+            } else if(operator.terms.size() == 1) {
+                operator.terms.add(predicates.get(0));
+                return;
+            }
+
+            operator.terms.addAll(predicates);
         } else {
-            //TODO Handle 3 predicate case
             operator.terms.addAll(predicates);
         }
     }
