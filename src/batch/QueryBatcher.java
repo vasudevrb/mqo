@@ -11,6 +11,7 @@ import common.Evaluator;
 import common.QueryExecutor;
 import common.Utils;
 import org.apache.calcite.sql.*;
+import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
 
 import java.sql.ResultSet;
@@ -47,7 +48,7 @@ public class QueryBatcher {
         );
     }
 
-    public List<BatchedQuery> batch(List<String> queries) throws Exception {
+    public List<BatchedQuery> batch(List<String> queries) {
         ArrayList<BatchedQuery> batchedQueries = new ArrayList<>();
         Map<String, SqlNode> batchedQueryNodes = new HashMap<>();
 
@@ -528,6 +529,19 @@ public class QueryBatcher {
                         ", booleanRepn='" + booleanRepn + '\'' +
                         '}';
             }
+        }
+    }
+
+    public static class DefaultMapContext extends MapContext {
+
+        @Override
+        public boolean has(String name) {
+            return true;
+        }
+
+        @Override
+        public Object get(String name) {
+            return super.get(name) != null ? super.get(name) : true;
         }
     }
 }
