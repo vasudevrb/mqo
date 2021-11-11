@@ -146,6 +146,10 @@ public class Predicate extends Term implements Comparable<Predicate> {
         return unquotedName + " " + operator + " " + value;
     }
 
+    public String buildString() {
+        return name + " " + operator + " " + value;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

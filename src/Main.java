@@ -9,13 +9,8 @@ public class Main {
         hideLoggerWarnings();
 
         Configuration config = Configuration.initialize();
-        Tester tester = new Tester(config);
-
-//        tester.testMVSubstitution();
-//        tester.testMVSubstitution2();
-        tester.testBatch();
-//        tester.testCost();
-//        tester.testListenerThreads();
+        Window window = new Window(config);
+        window.run();
     }
 
     public static void hideLoggerWarnings() {

@@ -22,7 +22,7 @@ public class Operator extends Term {
         List<String> pNames = terms.stream()
                 .filter(t -> t instanceof Predicate)
                 .filter(pr -> exclusion.apply(((Predicate) pr).getValue())) //TODO Maybe just check predicate.isJoin instead of string ops
-                .map(t -> ((Predicate) t).getName().replaceAll("`", "\""))
+                .map(t -> ((Predicate) t).getName().replace("`", "\""))
                 .collect(Collectors.toList());
         terms.stream()
                 .filter(t -> t instanceof Operator)
@@ -36,7 +36,7 @@ public class Operator extends Term {
             if (term instanceof Operator) {
                 strs.add(((Operator) term).buildString());
             } else if (term instanceof Predicate) {
-                strs.add(term.toString());
+                strs.add(((Predicate) term).buildString());
             }
         }
         return "(" + String.join(" " + type.name() + " ", strs) + ")";
