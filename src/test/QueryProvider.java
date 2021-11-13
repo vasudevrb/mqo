@@ -29,20 +29,50 @@ public class QueryProvider {
             AND "l_quantity" > 25
             """;
 
+    // ========================================================================
+
     private static final String b1q1 = """
-            SELECT "s_name", "s_suppkey" \
+            SELECT "s_name" \
             FROM "public"."supplier" \
             JOIN "public"."nation" on "s_nationkey" = "n_nationkey" \
-            WHERE "s_suppkey" < 800 \
-            OR "s_suppkey" > 900
+            WHERE ("s_suppkey" < 800 \
+            OR "s_suppkey" > 900) \
+            AND "s_acctbal" < 1000
             """;
 
     private static final String b1q2 = """
             SELECT "s_name", "s_suppkey" \
             FROM "public"."supplier" \
             JOIN "public"."nation" on "s_nationkey" = "n_nationkey" \
-            WHERE "s_suppkey" < 100
+            WHERE "s_suppkey" < 100 \
+            AND "s_acctbal" < 500
             """;
+
+    private static final String b1q3 = """
+            SELECT "s_name", "n_name", "s_suppkey" \
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             WHERE "s_suppkey" < 1500 \
+             AND "s_acctbal" BETWEEN 600 AND 1100
+            """;
+
+    private static final String b1q4 = """
+            SELECT "s_suppkey" \
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             WHERE "s_suppkey" < 1500 \
+             AND "s_acctbal" < 500
+            """;
+
+    private static final String b1q5 = """
+            SELECT "s_name", "s_acctbal" \
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             WHERE "s_suppkey" < 1500 \
+             AND "s_acctbal" > -400
+            """;
+
+    // ========================================================================
 
     private static final String b2q1 = """
             SELECT "s_name", "r_name" \
@@ -58,6 +88,33 @@ public class QueryProvider {
              JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
              JOIN "public"."region" ON "r_regionkey" = "n_regionkey" \
              WHERE "s_suppkey" < 1500
+            """;
+
+    private static final String b2q3= """
+            SELECT "s_name", "n_name", "r_name" \
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             JOIN "public"."region" ON "r_regionkey" = "n_regionkey" \
+             WHERE "s_suppkey" < 1500 \
+             AND "s_acctbal" BETWEEN 0 AND 1000
+            """;
+
+    private static final String b2q4 = """
+            SELECT "s_name", "n_name", "r_name" \
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             JOIN "public"."region" ON "r_regionkey" = "n_regionkey" \
+             WHERE "s_suppkey" < 1500 \
+             AND "s_acctbal" BETWEEN -100 AND 200
+            """;
+
+    private static final String b2q5 = """
+            SELECT "s_name", "n_name", "r_name" \
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             JOIN "public"."region" ON "r_regionkey" = "n_regionkey" \
+             WHERE "s_suppkey" < 1500 \
+             AND "s_acctbal" > 700
             """;
 
     private static final String m0q1 = """
@@ -135,8 +192,8 @@ public class QueryProvider {
 
     private final List<List<String>> batches = List.of(
             List.of(b0q1, b0q2),
-            List.of(b1q1, b1q2),
-            List.of(b2q1, b2q2)
+            List.of(b1q1, b1q2, b1q3, b1q4, b1q5),
+            List.of(b2q1, b2q2, b2q3, b2q4, b2q5)
     );
 
     private final List<List<String>> materializables = List.of(

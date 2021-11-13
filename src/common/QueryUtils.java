@@ -5,6 +5,8 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.commons.lang.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,6 +17,11 @@ public class QueryUtils {
 
     public static String from(SqlNode node) {
         return ((SqlSelect) node).getFrom().toString();
+    }
+
+    public static String getFromString(SqlNode node) {
+        String sql = node.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
+        return StringUtils.trim(StringUtils.substringBetween(sql, "FROM ", "WHERE "));
     }
 
     public static String where(SqlNode node) {

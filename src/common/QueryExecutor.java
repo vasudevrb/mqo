@@ -60,7 +60,7 @@ public class QueryExecutor {
     public SqlNode validate(SqlNode node) {
         if (hasBetween(node)) {
             String where = replaceBetween(node).replace("`", "\"");
-            String query = "SELECT " + String.join(",", selectList(node)) + " FROM " + from(node) + " WHERE " + where;
+            String query = "SELECT " + String.join(",", selectList(node)) + " FROM " + getFromString(node) + " WHERE " + where;
             return this.validate(query);
         }
         return validator.validate(node);
