@@ -203,7 +203,7 @@ public class QueryBatcher {
     }
 
     private String getQueryString(SqlNode n1) {
-        String query = "SELECT " + String.join(", ", selectList(n1)) + " FROM " + String.join(",", from(n1)) + " WHERE " + where(n1);
+        String query = "SELECT " + String.join(", ", selectList(n1)) + " FROM " + getFromString(n1) + " WHERE " + where(n1);
         return replace(query, "`", "\"");
     }
 
