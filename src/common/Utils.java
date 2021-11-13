@@ -2,13 +2,19 @@ package common;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Arrays;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class Utils {
 
     public static String getPrintableSql(String sql) {
         return sql.replace(" FROM ", "\nFROM ")
                 .replace(" WHERE ", "\nWHERE ");
+    }
+
+    public static String placeQuotes(String str) {
+        return Arrays.stream(StringUtils.splitByWholeSeparator(str, ".")).map(x -> "\"" + x + "\"").collect(Collectors.joining("."));
     }
 
     public static boolean isInt(String val) {

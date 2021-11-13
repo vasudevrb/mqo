@@ -147,7 +147,7 @@ public class Predicate extends Term implements Comparable<Predicate> {
     }
 
     public String buildString() {
-        return name + " " + operator + " " + value;
+        return name + " " + operator + " " + (isJoin ? Utils.placeQuotes(value) : value);
     }
 
     @Override
