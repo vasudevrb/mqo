@@ -11,6 +11,8 @@ import common.Evaluator;
 import common.QueryExecutor;
 import common.Utils;
 import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.util.SqlString;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
 
@@ -218,7 +220,7 @@ public class QueryBatcher {
         selectSet.addAll(getWherePredicateNames(n1));
         selectSet.addAll(getWherePredicateNames(n2));
 
-        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + String.join(",", from(n1)) + " WHERE " + combinedWhere;
+        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + getFromString(n1) + " WHERE " + combinedWhere;
         return replace(combinedQuery, "`", "\"");
     }
 
@@ -266,6 +268,11 @@ public class QueryBatcher {
         }
 
         return List.of(((SqlSelect) node).getFrom().toString());
+    }
+
+    public String getFromString(SqlNode node) {
+        String sql = node.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
+        return StringUtils.trim(StringUtils.substringBetween(sql, "FROM ", "WHERE "));
     }
 
     //Given a SqlJoin, this function returns all the operands that are not commas and stuff

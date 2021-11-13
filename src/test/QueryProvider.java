@@ -31,33 +31,33 @@ public class QueryProvider {
 
     private static final String b1q1 = """
             SELECT "s_name", "s_suppkey" \
-            FROM "public"."supplier", "public"."nation" \
-            WHERE "s_nationkey" = "n_nationkey" \
-            AND ("s_suppkey" < 800 \
-            OR "s_suppkey" > 900)
+            FROM "public"."supplier" \
+            JOIN "public"."nation" on "s_nationkey" = "n_nationkey" \
+            WHERE "s_suppkey" < 800 \
+            OR "s_suppkey" > 900
             """;
 
     private static final String b1q2 = """
             SELECT "s_name", "s_suppkey" \
-            FROM "public"."supplier", "public"."nation" \
-            WHERE "s_nationkey" = "n_nationkey" \
-            AND "s_suppkey" < 100
+            FROM "public"."supplier" \
+            JOIN "public"."nation" on "s_nationkey" = "n_nationkey" \
+            WHERE "s_suppkey" < 100
             """;
 
     private static final String b2q1 = """
-            SELECT "s_name", "n_name", "r_name" \
-            FROM "public"."supplier", "public"."nation", "public"."region" \
-            WHERE "s_nationkey" = "n_nationkey" \
-            AND "n_regionkey" = "r_regionkey" \
-            AND "s_suppkey" < 1200
+            SELECT "s_name", "r_name" \
+            FROM "public"."supplier" \
+            JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+            JOIN "public"."region" ON "r_regionkey" = "n_regionkey" \
+            WHERE "s_suppkey" < 1200
             """;
 
     private static final String b2q2 = """
             SELECT "s_name", "n_name", "r_name" \
-            FROM "public"."supplier", "public"."nation", "public"."region" \
-            WHERE "s_nationkey" = "n_nationkey" \
-            AND "n_regionkey" = "r_regionkey" \
-            AND "s_suppkey" < 1500
+             FROM "public"."supplier" \
+             JOIN "public"."nation" ON "s_nationkey" = "n_nationkey" \
+             JOIN "public"."region" ON "r_regionkey" = "n_regionkey" \
+             WHERE "s_suppkey" < 1500
             """;
 
     private static final String m0q1 = """

@@ -43,9 +43,7 @@ public class Tester {
 
     public void testBatch() {
         QueryBatcher queryBatcher = new QueryBatcher(config, executor);
-
-        List<String> queries = queryProvider.getBatch(1);
-        List<BatchedQuery> combined = queryBatcher.batch(queries);
+        List<BatchedQuery> combined = queryBatcher.batch(queryProvider.getBatch(2));
 
         for (BatchedQuery bq : combined) {
             System.out.println(getPrintableSql(bq.sql));
