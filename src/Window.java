@@ -11,6 +11,7 @@ import org.apache.calcite.sql.SqlNode;
 import test.QueryProvider;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 import static common.Utils.randomString;
@@ -32,28 +33,23 @@ public class Window {
     }
 
     public void run() throws SQLException {
-        List<String> queries = provider.getBatch(2);
+        List<String> queries = provider.getAllBatches();
+        Collections.shuffle(queries);
 
-        long t1 = System.currentTimeMillis();
-        for (String q: queries) {
-            executor.execute(executor.getLogicalPlan(q), rs -> System.out.println(QueryUtils.countRows(rs)));
-        }
-        System.out.println("Ind exec: " + (System.currentTimeMillis() - t1) + " ms");
-
-        t1 = System.currentTimeMillis();
         List<BatchedQuery> batchedQueries = batcher.batch(queries);
-        BatchedQuery bq = batchedQueries.get(0);
 
-        System.out.println();
-        System.out.println(Utils.getPrintableSql(bq.sql));
-        System.out.println();
-        RelOptMaterialization materialization = optimizer.materialize(randomString(4), bq.sql);
-        for (SqlNode node : bq.parts) {
-            RelNode relNode = optimizer.substitute(materialization, executor.getLogicalPlan(node));
-            if (relNode != null) {
-                executor.execute(relNode, rs -> System.out.println(QueryUtils.countRows(rs)));
+        for (BatchedQuery bq : batchedQueries) {
+            System.out.println();
+            System.out.println(Utils.getPrintableSql(bq.sql));
+            System.out.println();
+
+            RelOptMaterialization materialization = optimizer.materialize(randomString(4), bq.sql);
+            for (SqlNode node : bq.parts.subList(1, bq.parts.size())) {
+                RelNode relNode = optimizer.substitute(materialization, executor.getLogicalPlan(node));
+                if (relNode != null) {
+                    executor.execute(relNode, rs -> System.out.println(QueryUtils.countRows(rs)));
+                }
             }
         }
-        System.out.println("Batch exec: " + (System.currentTimeMillis() - t1) + " ms");
     }
 }
