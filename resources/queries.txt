@@ -1,0 +1,194 @@
+====================================================================================
+==========================
+
+% B0
+
+SELECT "l_extendedprice", "l_quantity"
+FROM "public"."lineitem"
+WHERE "l_shipdate" >= date '1994-01-01'
+AND "l_shipdate" < date '1994-09-02'
+AND "l_discount" > 0.07
+AND "l_quantity" > 45
+
+==========================
+% B0
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_shipdate" < date '1994-06-02'
+AND "l_shipdate" > date '1994-01-01'
+AND "l_quantity" > 25
+
+====================================================================================
+% B1
+
+SELECT "s_name"
+FROM "public"."supplier"
+JOIN "public"."nation" on "s_nationkey" = "n_nationkey"
+WHERE ("s_suppkey" < 800
+OR "s_suppkey" > 900)
+AND "s_acctbal" < 1000
+
+==========================
+% B1
+
+SELECT "s_name", "s_suppkey"
+FROM "public"."supplier"
+JOIN "public"."nation" on "s_nationkey" = "n_nationkey"
+WHERE "s_suppkey" < 100
+AND "s_acctbal" < 500
+
+==========================
+% B1
+
+SELECT "s_name", "n_name", "s_suppkey"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+WHERE "s_suppkey" < 1500
+AND "s_acctbal" BETWEEN 600 AND 1100
+
+==========================
+% B1
+
+SELECT "s_suppkey"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+WHERE "s_suppkey" < 1500
+AND "s_acctbal" < 500
+
+==========================
+% B1
+
+SELECT "s_name", "s_acctbal"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+WHERE "s_suppkey" < 1500
+AND "s_acctbal" > -400
+
+====================================================================================
+% B2
+
+SELECT "s_name", "r_name"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+JOIN "public"."region" ON "r_regionkey" = "n_regionkey"
+WHERE "s_suppkey" < 1200
+
+==========================
+% B2
+
+SELECT "s_name", "n_name", "r_name"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+JOIN "public"."region" ON "r_regionkey" = "n_regionkey"
+WHERE "s_suppkey" < 1500
+
+==========================
+% B2
+
+SELECT "s_name", "n_name", "r_name"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+JOIN "public"."region" ON "r_regionkey" = "n_regionkey"
+WHERE "s_suppkey" < 1500
+AND "s_acctbal" BETWEEN 0 AND 1000
+
+==========================
+% B2
+
+SELECT "s_name", "n_name", "r_name"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+JOIN "public"."region" ON "r_regionkey" = "n_regionkey"
+WHERE "s_suppkey" < 1500
+AND "s_acctbal" BETWEEN -100 AND 200
+
+==========================
+% B2
+
+SELECT "s_name", "n_name", "r_name"
+FROM "public"."supplier"
+JOIN "public"."nation" ON "s_nationkey" = "n_nationkey"
+JOIN "public"."region" ON "r_regionkey" = "n_regionkey"
+WHERE "s_suppkey" < 1500
+AND "s_acctbal" > 700
+
+====================================================================================
+% M0
+
+SELECT "l_extendedprice", "l_shipdate", "l_discount", "l_quantity"
+FROM "public"."lineitem"
+WHERE "l_shipdate" >= date '1994-01-01'
+AND "l_shipdate" < date '1995-01-01'
+AND "l_discount" >= 0.05
+AND "l_quantity" < 24
+
+==========================
+% M0
+
+SELECT "l_extendedprice"
+FROM "public"."lineitem"
+WHERE "l_shipdate" >= date '1994-01-01'
+AND "l_shipdate" < date '1994-06-01'
+AND "l_discount" between 0.06 AND 0.07
+AND "l_quantity" < 14
+
+==========================
+% M0
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_shipdate" >= date '1994-04-01'
+AND "l_shipdate" < date '1994-12-01'
+AND "l_discount" > 0.08
+AND "l_quantity" < 20
+
+==========================
+% M0
+
+SELECT "l_shipdate"
+FROM "public"."lineitem"
+WHERE "l_shipdate" >= date '1994-03-01'
+AND "l_shipdate" < date '1994-06-01'
+AND "l_discount" between 0.06 AND 0.07
+AND "l_quantity" < 18
+
+====================================================================================
+% M1
+
+SELECT "r_name"
+FROM "public"."region"
+
+==========================
+% M1
+
+SELECT "r_name"
+FROM "public"."region"
+
+====================================================================================
+% M2
+
+SELECT "l_discount", "l_quantity"
+FROM "lineitem"
+WHERE "l_quantity" < 24
+
+==========================
+% M2
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_quantity" < 4
+
+====================================================================================
+% M3
+
+SELECT "s_suppkey", "s_name"
+FROM "supplier"
+WHERE "s_suppkey" < 1000
+
+==========================
+% M3
+
+SELECT "s_name"
+FROM "public"."supplier"
+WHERE "s_suppkey" < 100
