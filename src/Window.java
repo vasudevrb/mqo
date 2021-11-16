@@ -11,6 +11,8 @@ import org.apache.calcite.sql.SqlNode;
 import test.QueryProvider;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,8 +35,36 @@ public class Window {
     }
 
     public void run() throws SQLException {
-        List<String> queries = provider.getAllBatches();
+//        List<String> queries = provider.getAllBatches();
+        String mv = """
+                SELECT "l_shipdate", COUNT(*) as "cd" \
+                FROM "public"."lineitem" \
+                WHERE "l_shipdate" >= date '1994-03-01' \
+                AND "l_shipdate" < date '1994-06-01' \
+                AND "l_discount" between 0.06 AND 0.07 \
+                AND "l_quantity" < 18
+                GROUP BY "l_shipdate"
+                """;
+
+        String q = """
+                SELECT "l_shipdate", COUNT(*) as "cncn" \
+                FROM "public"."lineitem" \
+                WHERE "l_shipdate" >= date '1994-04-01' \
+                AND "l_shipdate" < date '1994-05-01' \
+                AND "l_discount" between 0.06 AND 0.07 \
+                AND "l_quantity" < 18
+                GROUP BY "l_shipdate"
+                """;
+
+        List<String> queries = new ArrayList<>();
+        queries.addAll(Arrays.asList(mv, q));
         Collections.shuffle(queries);
+
+        long t1 = System.currentTimeMillis();
+        for (String s : queries) {
+            executor.execute(executor.getLogicalPlan(s), null);
+        }
+        System.out.println("IND: " + (System.currentTimeMillis() - t1) + " ms");
 
         List<BatchedQuery> batchedQueries = batcher.batch(queries);
 
@@ -47,6 +77,7 @@ public class Window {
             for (SqlNode node : bq.parts.subList(1, bq.parts.size())) {
                 RelNode relNode = optimizer.substitute(materialization, executor.getLogicalPlan(node));
                 if (relNode != null) {
+                    System.out.println(relNode.explain());
                     executor.execute(relNode, rs -> System.out.println(QueryUtils.countRows(rs)));
                 }
             }

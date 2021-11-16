@@ -10,9 +10,10 @@ import common.Configuration;
 import common.Evaluator;
 import common.QueryExecutor;
 import common.Utils;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
-import org.apache.calcite.sql.util.SqlString;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.lang.StringUtils;
 
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static batch.data.Operator.Type.AND;
 import static batch.data.Operator.Type.OR;
+import static common.QueryUtils.*;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang.StringUtils.replace;
 import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
@@ -220,7 +222,7 @@ public class QueryBatcher {
         selectSet.addAll(getWherePredicateNames(n1));
         selectSet.addAll(getWherePredicateNames(n2));
 
-        String combinedQuery = "SELECT " + String.join(", ", selectSet) + " FROM " + getFromString(n1) + " WHERE " + combinedWhere;
+        String combinedQuery = recreateQuery(n1, combinedWhere.toString());
         return replace(combinedQuery, "`", "\"");
     }
 
@@ -258,47 +260,6 @@ public class QueryBatcher {
         }
 
         return opAnd;
-    }
-
-    public List<String> from(SqlNode node) {
-        SqlSelect selectNode = (SqlSelect) node;
-
-        if (selectNode.getFrom() instanceof SqlJoin) {
-            return getOperands((SqlJoin) selectNode.getFrom());
-        }
-
-        return List.of(((SqlSelect) node).getFrom().toString());
-    }
-
-    public String getFromString(SqlNode node) {
-        String sql = node.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
-        return StringUtils.trim(StringUtils.substringBetween(sql, "FROM ", "WHERE "));
-    }
-
-    //Given a SqlJoin, this function returns all the operands that are not commas and stuff
-    //This is needed for threeway joins, which in calcite, are represented as [SqlJoin, SqlBasicCall]
-    private List<String> getOperands(SqlJoin join) {
-        ArrayList<String> calls = new ArrayList<>();
-
-        calls.addAll(join.getOperandList().stream().filter(x -> x instanceof SqlBasicCall).map(SqlNode::toString).toList());
-        join.getOperandList().stream()
-                .filter(x -> x instanceof SqlJoin)
-                .map(j -> getOperands((SqlJoin) j))
-                .forEach(ca -> calls.addAll(ca));
-
-        return calls;
-    }
-
-    //TODO Use queryutil impl because this has errors when where is empty
-    public String where(SqlNode node) {
-        return ((SqlSelect) node).getWhere().toString();
-    }
-
-    public List<String> selectList(SqlNode node) {
-        return ((SqlSelect) node).getSelectList()
-                .stream()
-                .map(sl -> "\"" + sl.toString().replace(".", "\".\"") + "\"")
-                .collect(Collectors.toList());
     }
 
     private List<List<Predicate>> clean(List<List<Predicate>> pr) {
@@ -360,7 +321,7 @@ public class QueryBatcher {
             buildCoveringPredicate2(predicates.get(0), predicates.get(1), operator);
             if (operator.terms.size() > 1) {
                 operator.terms.clear();
-            } else if(operator.terms.size() == 1) {
+            } else if (operator.terms.size() == 1) {
                 operator.terms.add(predicates.get(2));
                 return;
             }
@@ -368,7 +329,7 @@ public class QueryBatcher {
             buildCoveringPredicate2(predicates.get(0), predicates.get(2), operator);
             if (operator.terms.size() > 1) {
                 operator.terms.clear();
-            } else if(operator.terms.size() == 1) {
+            } else if (operator.terms.size() == 1) {
                 operator.terms.add(predicates.get(1));
                 return;
             }
@@ -376,7 +337,7 @@ public class QueryBatcher {
             buildCoveringPredicate2(predicates.get(1), predicates.get(2), operator);
             if (operator.terms.size() > 1) {
                 operator.terms.clear();
-            } else if(operator.terms.size() == 1) {
+            } else if (operator.terms.size() == 1) {
                 operator.terms.add(predicates.get(0));
                 return;
             }
