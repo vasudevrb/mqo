@@ -15,7 +15,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.commons.jexl3.MapContext;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,7 +26,7 @@ import static batch.data.Operator.Type.AND;
 import static batch.data.Operator.Type.OR;
 import static common.QueryUtils.*;
 import static java.util.Arrays.asList;
-import static org.apache.commons.lang.StringUtils.replace;
+import static org.apache.commons.lang3.StringUtils.replace;
 import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
 
 public class QueryBatcher {

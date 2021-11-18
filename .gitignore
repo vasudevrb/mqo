@@ -1,3 +1,6 @@
 /.idea/
 /out/production/calcite_postgres/
 /lib/
+/build/
+/.gradle/
+/out/

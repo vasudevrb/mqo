@@ -27,7 +27,7 @@ public class Tester {
     }
 
     public void testMVSubstitution() throws Exception {
-        List<String> matQueries = queryProvider.getMaterializable(0);
+        List<String> matQueries = queryProvider.getBatch(4);
 
         //Regular execution
         RelNode regNode = executor.getLogicalPlan(matQueries.get(0));

@@ -20,7 +20,6 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.tools.RelBuilder;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.apache.calcite.rel.core.RelFactories.LOGICAL_BUILDER;
 
