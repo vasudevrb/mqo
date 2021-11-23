@@ -1,6 +1,13 @@
 plugins {
     id 'java'
+    id 'application'
 }
+
+mainClassName = "Main"
+applicationDefaultJvmArgs = [
+        "-Djava.util.logging.config.file=src/main/resources/logging.properties"
+]
+
 
 group 'org.vasudevrb'
 version '1.0-SNAPSHOT'
