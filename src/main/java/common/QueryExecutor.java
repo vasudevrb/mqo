@@ -98,7 +98,19 @@ public class QueryExecutor {
         return getPhysicalPlan(getLogicalPlan(q));
     }
 
-    public void execute(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
+    public void execute(SqlNode node, Consumer<ResultSet> consumer) {
+        execute(getLogicalPlan(node), consumer);
+    }
+
+    public void execute(RelNode relNode, Consumer<ResultSet> consumer) {
+        try {
+            _execute(relNode, consumer);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void _execute(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
         RelNode physicalNode = getPhysicalPlan(relNode);
 
         //TODO: Try making runner global
