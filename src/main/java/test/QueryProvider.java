@@ -12,8 +12,7 @@ public class QueryProvider {
 
     private List<List<String>> queries;
 
-    private Provider provider;
-    private Receiver receiver;
+    private Thread providerThread;
 
     public QueryProvider() {
         try {
@@ -27,73 +26,51 @@ public class QueryProvider {
         return queries.get(index);
     }
 
-    public void listen(Consumer<String> consumer) {
-        BlockingQueue<String> blockingQueue = new LinkedBlockingDeque<>();
-        provider = new Provider(blockingQueue);
-        receiver = new Receiver(provider, blockingQueue, consumer);
+    public void listen(Consumer<List<String>> consumer) {
+        BlockingQueue<List<String>> blockingQueue = new LinkedBlockingDeque<>();
+        providerThread = new Thread(new Provider(this, blockingQueue));
+        providerThread.start();
 
-        new Thread(provider).start();
-        new Thread(receiver).start();
+        while (true) {
+            try {
+                if (providerThread.isInterrupted()) {
+                    break;
+                }
+
+                consumer.accept(blockingQueue.take());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void stopListening() {
-        provider.stop();
-        receiver.stop();
+        providerThread.interrupt();
     }
 
-    public static class Provider extends ThreadTask {
-        private final BlockingQueue<String> queue;
+    public static class Provider implements Runnable {
+        private final QueryProvider queryProvider;
+        private final BlockingQueue<List<String>> queue;
         private int i = 0;
 
-        public Provider(BlockingQueue<String> queue) {
+        public Provider(QueryProvider provider, BlockingQueue<List<String>> queue) {
+            this.queryProvider = provider;
             this.queue = queue;
         }
-
-        @Override
-        public void runUntilStopped() throws InterruptedException {
-            //TODO: Try gaussian but with rejection sampling
-            Thread.sleep(Utils.getRandomNumber(4 * 1000));
-            queue.put(String.valueOf(i));
-            i++;
-        }
-    }
-
-    public static class Receiver extends ThreadTask {
-        Provider provider;
-        Consumer<String> consumer;
-        BlockingQueue<String> queue;
-
-        public Receiver(Provider provider, BlockingQueue<String> queue, Consumer<String> consumer) {
-            this.provider = provider;
-            this.consumer = consumer;
-            this.queue = queue;
-        }
-
-        @Override
-        public void runUntilStopped() throws InterruptedException {
-            String val = queue.take();
-            consumer.accept(val);
-        }
-    }
-
-    abstract static class ThreadTask implements Runnable {
-        private boolean shouldStop = false;
-
-        public abstract void runUntilStopped() throws InterruptedException;
 
         @Override
         public void run() {
-            while (!shouldStop) {
+            //TODO: Try gaussian but with rejection sampling
+            while (true) {
                 try {
-                    runUntilStopped();
+                    Thread.sleep(Utils.getRandomNumber(4 * 1000));
+                    String query = i == 0 ? queryProvider.getBatch(0).get(0) : queryProvider.getBatch(0).get(1);
+                    queue.put(List.of(query));
+                    i++;
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    break;
                 }
             }
-        }
-
-        public void stop() {
-            this.shouldStop = true;
         }
     }
 }
