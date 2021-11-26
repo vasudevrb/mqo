@@ -3,16 +3,14 @@ package common;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlJoin;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,17 +67,29 @@ public class QueryUtils {
                 .collect(Collectors.toList());
     }
 
-    public static String recreateQuery(SqlNode node, String newWhere) {
-        String q = "SELECT " + String.join(",", selectList(node)) +
-                " FROM " + getFromString(node) +
-                " WHERE " + newWhere;
+    public static List<String> groupByList(SqlNode node) {
+        SqlNodeList groupBy = ((SqlSelect) node).getGroup();
 
-        SqlNode groupBy = ((SqlSelect) node).getGroup();
-        if (groupBy != null) {
-            q += " GROUP BY " + groupBy.toString().replace("`", "\"");
+        if (groupBy == null) {
+            return new ArrayList<>();
         }
 
+        return groupBy.stream()
+                .map(si -> "\"" + si.toString().replace(".", "\".\"") + "\"")
+                .collect(Collectors.toList());
+    }
+
+    public static String recreateQuery(SqlNode node, Collection<String> selects, String newWhere, Collection<String> groupBys) {
+        String q = "SELECT " + String.join(",", selects) +
+                " FROM " + getFromString(node) +
+                " WHERE " + newWhere +
+                " GROUP BY " + String.join(",", groupBys);
+
         return q;
+    }
+
+    public static String recreateQuery(SqlNode node, String newWhere) {
+        return recreateQuery(node, selectList(node), newWhere, groupByList(node));
     }
 
     public static int countRows(ResultSet rs) {

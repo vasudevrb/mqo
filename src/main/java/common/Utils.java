@@ -10,7 +10,8 @@ public class Utils {
 
     public static String getPrintableSql(String sql) {
         return sql.replace(" FROM ", "\nFROM ")
-                .replace(" WHERE ", "\nWHERE ");
+                .replace(" WHERE ", "\nWHERE ")
+                .replace(" GROUP BY ", "\nGROUP BY ");
     }
 
     public static String placeQuotes(String str) {

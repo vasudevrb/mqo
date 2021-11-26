@@ -222,7 +222,11 @@ public class QueryBatcher {
         selectSet.addAll(getWherePredicateNames(n1));
         selectSet.addAll(getWherePredicateNames(n2));
 
-        String combinedQuery = recreateQuery(n1, combinedWhere.toString());
+        Set<String> groupBySet = new HashSet<>();
+        groupBySet.addAll(groupByList(n1));
+        groupBySet.addAll(groupByList(n2));
+
+        String combinedQuery = recreateQuery(n1, selectSet, combinedWhere.toString(), groupBySet);
         return replace(combinedQuery, "`", "\"");
     }
 
