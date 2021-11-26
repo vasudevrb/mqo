@@ -2,6 +2,7 @@ import batch.QueryBatcher;
 import batch.data.BatchedQuery;
 import common.Configuration;
 import common.QueryExecutor;
+import common.QueryUtils;
 import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -33,6 +34,40 @@ public class Window {
         this.optimizer = new MViewOptimizer(configuration);
 
         this.materializations = new ArrayList<>();
+    }
+
+    public void testBatch() {
+        String q1 = """
+                SELECT count(*), "l_quantity", "l_discount" \
+                FROM "lineitem" \
+                WHERE "l_discount" < 0.08 \
+                AND "l_quantity" < 25 \
+                GROUP BY "l_quantity", "l_discount"
+                """;
+
+        String q2 = """
+                SELECT count("l_quantity"), "l_quantity" \
+                FROM "lineitem" \
+                WHERE "l_discount" < 0.04 \
+                AND "l_quantity" < 30 \
+                GROUP BY "l_quantity"
+                """;
+
+        String mv = """
+                SELECT "l_quantity", "l_discount" \
+                FROM "lineitem" \
+                WHERE "l_discount" < 0.08 \
+                AND "l_quantity" < 30
+                """;
+
+        List<BatchedQuery> b = batcher.batch(List.of(q2, q1));
+        System.out.println(Utils.getPrintableSql(b.get(0).sql));
+
+        RelOptMaterialization m = optimizer.materialize("asda", mv);
+        if (optimizer.substitute(m, executor.getLogicalPlan(q1)) != null) {
+            System.out.println("CAN SUB");
+        }
+        executor.execute(executor.validate(b.get(0).sql), rs -> System.out.println("Rows: " + QueryUtils.countRows(rs)));
     }
 
     public void run() {

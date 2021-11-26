@@ -53,6 +53,7 @@ public class QueryBatcher {
     }
 
     public List<BatchedQuery> batch(List<String> queries) {
+        //TODO: De-aggregate queries
         ArrayList<BatchedQuery> batchedQueries = new ArrayList<>();
         Map<String, SqlNode> batchedQueryNodes = new HashMap<>();
 
