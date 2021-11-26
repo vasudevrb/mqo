@@ -36,8 +36,6 @@ public class QueryBatcher {
     private final QueryExecutor validator;
     private final Evaluator evaluator;
 
-    //TODO Add support for 'SELECT * FROM' queries
-
     public QueryBatcher(Configuration configuration, QueryExecutor validator) {
         this.validator = validator;
         this.configuration = configuration;
@@ -211,6 +209,9 @@ public class QueryBatcher {
     }
 
     private String getCombinedQueryString(SqlNode n1, SqlNode n2) {
+        // This also works for queries that have SELECT *
+        // since after validation, * is converted to all table names.
+        // One caveat is aggregate queries, it is still being worked on how this will be handled.
         List<String> select1 = selectList(n1);
         List<String> select2 = selectList(n2);
 
