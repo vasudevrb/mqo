@@ -3,7 +3,7 @@
 
 % B0
 
-SELECT "l_extendedprice", "l_quantity"
+SELECT "l_extendedprice", "l_quantity", "l_discount", "l_shipdate"
 FROM "public"."lineitem"
 WHERE "l_shipdate" >= date '1994-01-01'
 AND "l_shipdate" < date '1994-09-02'
@@ -17,7 +17,8 @@ SELECT "l_discount"
 FROM "public"."lineitem"
 WHERE "l_shipdate" < date '1994-06-02'
 AND "l_shipdate" > date '1994-01-01'
-AND "l_quantity" > 25
+AND "l_quantity" > 50
+AND "l_discount" > 0.08
 
 ====================================================================================
 % B1
