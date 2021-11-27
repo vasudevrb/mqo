@@ -31,8 +31,6 @@ public class QueryExecutor {
     private final SqlValidator validator;
     private final SqlToRelConverter converter;
 
-    public boolean allowAggregations = true;
-
     private final Pattern betweenPattern = Pattern.compile("(\\S*) BETWEEN( \\S*)? (\\S*) \\S* (\\S*)");
 
     public QueryExecutor(Configuration configuration) {
@@ -60,7 +58,7 @@ public class QueryExecutor {
         return null;
     }
 
-    public SqlNode validate(SqlNode node) {
+    public SqlNode validate(SqlNode node, boolean allowAggregations) {
         if (hasBetween(node)) {
             String where = replaceBetween(node).replace("`", "\"");
             String query = recreateQuery(node, where);
@@ -74,8 +72,16 @@ public class QueryExecutor {
         return validator.validate(node);
     }
 
+    public SqlNode validate(SqlNode node) {
+        return validate(node, true);
+    }
+
+    public SqlNode validate(String q, boolean allowAggregations) {
+        return validate(parse(q), allowAggregations);
+    }
+
     public SqlNode validate(String q) {
-        return validate(parse(q));
+        return validate(q, true);
     }
 
     public RelNode getLogicalPlan(SqlNode node) {
@@ -99,10 +105,6 @@ public class QueryExecutor {
         RelNode newRoot = planner.changeTraits(node, cluster.traitSet().replace(EnumerableConvention.INSTANCE));
         planner.setRoot(newRoot);
         return planner.findBestExp();
-    }
-
-    public RelNode getPhysicalPlan(String q) {
-        return getPhysicalPlan(getLogicalPlan(q));
     }
 
     public void execute(SqlNode node, Consumer<ResultSet> consumer) {

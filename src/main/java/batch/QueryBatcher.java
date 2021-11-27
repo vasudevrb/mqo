@@ -58,8 +58,8 @@ public class QueryBatcher {
             return batchedQueries;
         }
 
-        SqlNode n1 = validator.validate(queries.get(0));
-        SqlNode n2 = validator.validate(queries.get(1));
+        SqlNode n1 = validator.validate(queries.get(0), false);
+        SqlNode n2 = validator.validate(queries.get(1), false);
         if (canMerge(n1, n2)) {
             batchedQueries.add(new BatchedQuery(getCombinedQueryString(n1, n2), asList(0, 1), asList(n1, n2)));
         } else {
@@ -70,7 +70,7 @@ public class QueryBatcher {
 
         while (k < queries.size()) {
             boolean added = false;
-            SqlNode n3 = validator.validate(queries.get(k));
+            SqlNode n3 = validator.validate(queries.get(k), false);
             for (int l = batchedQueries.size() - 1; l >= 0; l--) {
                 BatchedQuery bq = batchedQueries.get(l);
 
@@ -78,7 +78,7 @@ public class QueryBatcher {
                 if (batchedQueryNodes.containsKey(bq.sql)) {
                     n4 = batchedQueryNodes.get(bq.sql);
                 } else {
-                    n4 = validator.validate(bq.sql);
+                    n4 = validator.validate(bq.sql, false);
                     batchedQueryNodes.put(bq.sql, n4);
                 }
 
