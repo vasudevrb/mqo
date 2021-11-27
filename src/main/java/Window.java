@@ -133,23 +133,19 @@ public class Window {
         for (BatchedQuery bq : batched) {
             System.out.println("Batched SQL: " + Utils.getPrintableSql(bq.sql));
             RelNode substitutable = getSubstitution(executor.getLogicalPlan(bq.sql));
-            if (substitutable != null) {
-                for (SqlNode partQuery : bq.parts) {
-                    RelNode partSubstitutable = getSubstitution(executor.getLogicalPlan(partQuery));
-                    if (partSubstitutable == null) {
-                        System.out.println("This shouldn't happen!!!!!! Batch query is substitutable but parts are not");
-                        return;
-                    }
-                    executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
-                }
-            } else {
+            if (substitutable == null) {
                 RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), bq.sql);
                 materializations.add(materialization);
-                for (SqlNode partQuery : bq.parts) {
-                    executor.execute(partQuery, rs -> System.out.println("MVS Ind Executed " + bq.sql));
+            }
+
+            for (SqlNode partQuery : bq.parts) {
+                RelNode partSubstitutable = getSubstitution(executor.getLogicalPlan(partQuery));
+                if (partSubstitutable == null) {
+                    System.out.println("This shouldn't happen!!!!!! Batch query is substitutable but parts are not");
+                    return;
                 }
+                executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
             }
         }
-
     }
 }
