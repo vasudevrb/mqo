@@ -118,13 +118,14 @@ public class Configuration {
 //        planner.addRule(Bindables.FROM_NONE_RULE);
         planner.addRule(EnumerableRules.TO_BINDABLE);
 //
-//        EnumerableRules.rules().forEach(x -> planner.addRule(x));
+        EnumerableRules.rules().forEach(x -> planner.addRule(x));
 //        planner.addRule(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE); //TODO Find out why individual join queries won't work with this rule
-        planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
-        planner.addRule(EnumerableRules.ENUMERABLE_VALUES_RULE);
-        planner.addRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
-        planner.addRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
-        planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
+//        planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
+//        planner.addRule(EnumerableRules.ENUMERABLE_VALUES_RULE);
+//        planner.addRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
+//        planner.addRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
+//        planner.addRule(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
+//        planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
 
         RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
