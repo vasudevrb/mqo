@@ -60,7 +60,7 @@ public class QueryProvider {
 
         @Override
         public void run() {
-            //TODO: Try gaussian but with rejection sampling
+            //TODO: Try a different probability distribution maybe?
             while (true) {
                 try {
                     Thread.sleep(Utils.getRandomNumber(4 * 1000));

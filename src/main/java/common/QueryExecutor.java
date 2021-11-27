@@ -113,7 +113,6 @@ public class QueryExecutor {
     private void _execute(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
         RelNode physicalNode = getPhysicalPlan(relNode);
 
-        //TODO: Try making runner global
         RelRunner runner = connection.unwrap(RelRunner.class);
         long t1 = System.nanoTime();
         PreparedStatement run = runner.prepareStatement(physicalNode);
