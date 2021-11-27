@@ -2,7 +2,6 @@ import batch.QueryBatcher;
 import batch.data.BatchedQuery;
 import common.Configuration;
 import common.QueryExecutor;
-import common.QueryUtils;
 import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -132,6 +131,7 @@ public class Window {
         // If yes, then it means that the batch query parts can also use that same MV
         // Find substitutions and execute
         for (BatchedQuery bq : batched) {
+            System.out.println("Batched SQL: " + Utils.getPrintableSql(bq.sql));
             RelNode substitutable = getSubstitution(executor.getLogicalPlan(bq.sql));
             if (substitutable != null) {
                 for (SqlNode partQuery : bq.parts) {
@@ -143,6 +143,8 @@ public class Window {
                     executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
                 }
             } else {
+                RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), bq.sql);
+                materializations.add(materialization);
                 for (SqlNode partQuery : bq.parts) {
                     executor.execute(partQuery, rs -> System.out.println("MVS Ind Executed " + bq.sql));
                 }
