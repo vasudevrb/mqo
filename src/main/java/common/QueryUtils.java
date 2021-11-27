@@ -53,8 +53,24 @@ public class QueryUtils {
     }
 
     public static List<String> selectList(SqlNode node) {
+        return selectList(node, true);
+    }
+
+    public static List<String> selectList(SqlNode node, boolean includeAggregates) {
         return ((SqlSelect) node).getSelectList()
                 .stream()
+                .filter(sl -> {
+                    if (includeAggregates) {
+                        return true;
+                    }
+
+                    //Return the only selects which are not aggregates
+                    String ss = sl.toString();
+                    int bracIndex = ss.indexOf("(");
+                    var isAggregate = bracIndex != -1 && AGGREGATES.contains(ss.substring(0, bracIndex));
+
+                    return !isAggregate;
+                })
                 .map(sl -> {
                     String ss = sl.toString();
                     int bracIndex = ss.indexOf("(");
@@ -65,6 +81,10 @@ public class QueryUtils {
                     return "\"" + ss.replace(".", "\".\"") + "\"";
                 })
                 .collect(Collectors.toList());
+    }
+
+    public static boolean isAggregate(SqlNode node) {
+        return ((SqlSelect) node).getGroup() != null;
     }
 
     public static List<String> groupByList(SqlNode node) {
@@ -82,10 +102,17 @@ public class QueryUtils {
     public static String recreateQuery(SqlNode node, Collection<String> selects, String newWhere, Collection<String> groupBys) {
         String q = "SELECT " + String.join(",", selects) +
                 " FROM " + getFromString(node) +
-                " WHERE " + newWhere +
-                " GROUP BY " + String.join(",", groupBys);
+                " WHERE " + newWhere;
+
+        if (!groupBys.isEmpty()) {
+            q +=" GROUP BY " + String.join(",", groupBys);
+        }
 
         return q;
+    }
+
+    public static String recreateQuery(SqlNode node, List<String> selects, String newWhere) {
+        return recreateQuery(node, selects, newWhere, groupByList(node));
     }
 
     public static String recreateQuery(SqlNode node, String newWhere) {

@@ -17,12 +17,12 @@ import org.apache.calcite.tools.RelRunner;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static common.QueryUtils.recreateQuery;
-import static common.QueryUtils.where;
+import static common.QueryUtils.*;
 
 public class QueryExecutor {
 
@@ -30,6 +30,8 @@ public class QueryExecutor {
     private final CalciteConnection connection;
     private final SqlValidator validator;
     private final SqlToRelConverter converter;
+
+    public boolean allowAggregations = true;
 
     private final Pattern betweenPattern = Pattern.compile("(\\S*) BETWEEN( \\S*)? (\\S*) \\S* (\\S*)");
 
@@ -64,6 +66,11 @@ public class QueryExecutor {
             String query = recreateQuery(node, where);
             return this.validate(query);
         }
+
+        if (!allowAggregations && isAggregate(node)) {
+            return this.validate(deAggregateQuery(node));
+        }
+
         return validator.validate(node);
     }
 
@@ -144,5 +151,9 @@ public class QueryExecutor {
                     " AND " + predName + " <= " + predHigh);
         }
         return where;
+    }
+
+    private String deAggregateQuery(SqlNode node) {
+        return recreateQuery(node, selectList(node, false), where(node), Collections.emptyList());
     }
 }
