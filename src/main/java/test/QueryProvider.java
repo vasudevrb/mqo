@@ -64,9 +64,10 @@ public class QueryProvider {
             while (true) {
                 try {
                     Thread.sleep(Utils.getRandomNumber(4 * 1000));
-                    List<String> query = i == 0
-                            ? queryProvider.getBatch(0)
-                            : List.of(queryProvider.getBatch(0).get(i % 3));
+//                    List<String> query = i == 0
+//                            ? queryProvider.getBatch(0)
+//                            : List.of(queryProvider.getBatch(0).get(i % 3));
+                    List<String> query = List.of(queryProvider.getBatch(3).get(i % 15));
                     queue.put(query);
                     i++;
                 } catch (InterruptedException e) {

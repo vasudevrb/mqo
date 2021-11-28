@@ -1,5 +1,8 @@
 import batch.QueryBatcher;
 import batch.data.BatchedQuery;
+import cache.Cache;
+import cache.CacheItem;
+import cache.policy.LRUPolicy;
 import common.Configuration;
 import common.QueryExecutor;
 import common.Utils;
@@ -9,7 +12,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import test.QueryProvider;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -23,7 +25,7 @@ public class Window {
     private final QueryBatcher batcher;
     private final MViewOptimizer optimizer;
 
-    private final ArrayList<RelOptMaterialization> materializations;
+    private final Cache<RelOptMaterialization> cache;
 
     public Window(Configuration configuration) {
         this.executor = new QueryExecutor(configuration);
@@ -32,7 +34,7 @@ public class Window {
         this.batcher = new QueryBatcher(configuration, executor);
         this.optimizer = new MViewOptimizer(configuration);
 
-        this.materializations = new ArrayList<>();
+        this.cache = new Cache<>(new LRUPolicy<>(), 10);
     }
 
     public void testBatch() {
@@ -73,7 +75,7 @@ public class Window {
             count.getAndIncrement();
             System.out.println("===============================================");
             handle(qs);
-            if (count.get() == 5) {
+            if (count.get() == 15) {
                 System.out.println("Stopping...");
                 provider.stopListening();
             }
@@ -90,7 +92,8 @@ public class Window {
 
     private RelNode getSubstitution(RelNode logicalPlan) {
         RelNode substituted;
-        for (RelOptMaterialization materialization : materializations) {
+        for (CacheItem<RelOptMaterialization> item : cache.getItems()) {
+            RelOptMaterialization materialization = item.getItem();
             substituted = optimizer.substitute(materialization, logicalPlan);
             if (substituted != null) {
                 return substituted;
@@ -105,7 +108,7 @@ public class Window {
 
         if (substituted == null) {
             RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), q);
-            materializations.add(materialization);
+            cache.add(materialization);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from
             //TODO: materialized table
             executor.execute(logicalPlan, rs -> System.out.println("Executed " + q.replace("\n", " ")));
@@ -135,7 +138,7 @@ public class Window {
             RelNode substitutable = getSubstitution(executor.getLogicalPlan(bq.sql));
             if (substitutable == null) {
                 RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), bq.sql);
-                materializations.add(materialization);
+                cache.add(materialization);
             }
 
             for (SqlNode partQuery : bq.parts) {

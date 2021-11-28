@@ -1,32 +1,49 @@
 package cache;
 
+import cache.policy.ReplacementPolicy;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
 public class Cache<T> {
 
     private final List<CacheItem<T>> items;
-    private int size;
+    private final CountWatcher countWatcher;
+    private final ReplacementPolicy<T> policy;
+    private int count;
 
-    public Cache(int size) {
+    public Cache(ReplacementPolicy<T> policy, int count) {
         this.items = new ArrayList<>();
-        this.size = size;
+        this.policy = policy;
+        this.count = count;
+
+        this.countWatcher = () -> {
+            if (this.items.size() > this.count * 0.7) {
+                System.out.println("Cleaning cache!!");
+                clean();
+            }
+        };
     }
 
-    public void addItem(T item) {
+    public void add(T item) {
         this.items.add(new CacheItem<>(item));
+        countWatcher.onCountChanged();
     }
 
-    public List<T> getItems() {
-        return items.stream().map(CacheItem::getItem).collect(Collectors.toList());
+    public List<CacheItem<T>> getItems() {
+        return items;
     }
 
-    public void incrementNumAccesses(T item) {
-        items.stream().filter(i -> i.getItem() == item).forEach(CacheItem::incrementNumAccesses);
+    public void clean() {
+        CompletableFuture.runAsync(() -> {
+            synchronized (items) {
+                policy.clean(items, count);
+            }
+        });
     }
 
-    public boolean clean() {
-        return true;
+    public interface CountWatcher {
+        void onCountChanged();
     }
 }

@@ -12,6 +12,8 @@ public class CacheItem<T> {
     }
 
     public T getItem() {
+        lastAccessTime = System.currentTimeMillis();
+        numAccesses++;
         return item;
     }
 

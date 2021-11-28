@@ -127,6 +127,111 @@ WHERE "s_suppkey" < 1500
 AND "s_acctbal" > 700
 
 ====================================================================================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.02
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.04
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.06
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.08
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.1
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.12
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.14
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.16
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.18
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.2
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.22
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.24
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.26
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.28
+
+==========================
+% B3
+
+SELECT "l_discount"
+FROM "public"."lineitem"
+WHERE "l_discount" < 0.30
+
+====================================================================================
 % M0
 
 SELECT "l_extendedprice", "l_shipdate", "l_discount", "l_quantity"

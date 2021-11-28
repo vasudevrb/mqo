@@ -5,5 +5,10 @@ import cache.CacheItem;
 import java.util.List;
 
 public interface ReplacementPolicy<T> {
-    boolean clean(List<CacheItem<T>> items);
+
+    default boolean clean(List<CacheItem<T>> items, int maxSize) {
+        return clean(items, maxSize, 0.7f);
+    }
+
+    boolean clean(List<CacheItem<T>> items, int maxSize, float proportion);
 }
