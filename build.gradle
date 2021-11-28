@@ -23,5 +23,6 @@ dependencies {
     implementation 'org.apache.commons:commons-jexl3:3.2.1'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'commons-io:commons-io:2.11.0'
+    implementation 'org.openjdk.jol:jol-core:0.16'
 
 }
