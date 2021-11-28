@@ -108,7 +108,7 @@ public class Window {
             materializations.add(materialization);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from
             //TODO: materialized table
-            executor.execute(materialization.queryRel, rs -> System.out.println("Executed " + q.replace("\n", " ")));
+            executor.execute(logicalPlan, rs -> System.out.println("Executed " + q.replace("\n", " ")));
         } else {
             executor.execute(substituted, rs -> System.out.println("MVS Executed " + q.replace("\n", " ")));
         }

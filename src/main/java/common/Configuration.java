@@ -118,7 +118,9 @@ public class Configuration {
 //        planner.addRule(Bindables.FROM_NONE_RULE);
         planner.addRule(EnumerableRules.TO_BINDABLE);
 //
-        EnumerableRules.rules().forEach(x -> planner.addRule(x));
+        EnumerableRules.rules().stream()
+                .filter(rule -> rule != EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)
+                .forEach(planner::addRule);
 //        planner.addRule(EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE); //TODO Find out why individual join queries won't work with this rule
 //        planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
 //        planner.addRule(EnumerableRules.ENUMERABLE_VALUES_RULE);
