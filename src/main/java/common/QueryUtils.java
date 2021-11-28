@@ -2,7 +2,9 @@ package common;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.commons.lang3.StringUtils;
@@ -105,7 +107,7 @@ public class QueryUtils {
                 " WHERE " + newWhere;
 
         if (!groupBys.isEmpty()) {
-            q +=" GROUP BY " + String.join(",", groupBys);
+            q += " GROUP BY " + String.join(",", groupBys);
         }
 
         return q;
@@ -130,6 +132,22 @@ public class QueryUtils {
         }
 
         return count;
+    }
+
+    public static long getTableSize(RelOptMaterialization materialization) {
+        long t1 = System.currentTimeMillis();
+        RelNode table = materialization.tableRel;
+        RelMetadataQuery mq = table.getCluster().getMetadataQuery();
+        Double avgRowSize = mq.getAverageRowSize(table);
+         if (avgRowSize == null) {
+            System.out.println("=====Average row size is null, shouldn't be=====");
+        }
+//        long rowCount = (long) table.estimateRowCount(table.getCluster().getMetadataQuery());
+        long rowCount = (long) mq.getCumulativeCost(table).getRows();
+        long size = (long) (rowCount * (avgRowSize != null ? avgRowSize : 1));
+
+        System.out.println("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms");
+        return size;
     }
 
     public static RelOptCost getCost(RelNode node) {

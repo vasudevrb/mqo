@@ -2,6 +2,7 @@ import batch.QueryBatcher;
 import batch.data.BatchedQuery;
 import cache.Cache;
 import cache.CacheItem;
+import cache.dim.Dimension;
 import cache.policy.LRUPolicy;
 import common.Configuration;
 import common.QueryExecutor;
@@ -34,7 +35,8 @@ public class Window {
         this.batcher = new QueryBatcher(configuration, executor);
         this.optimizer = new MViewOptimizer(configuration);
 
-        this.cache = new Cache<>(new LRUPolicy<>(), 10);
+        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(10));
+//        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(100 * FileUtils.ONE_MB));
     }
 
     public void testBatch() {
