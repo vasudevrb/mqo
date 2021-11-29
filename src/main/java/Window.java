@@ -41,19 +41,19 @@ public class Window {
 
     public void testBatch() {
         String q1 = """
-                SELECT count(*), "l_quantity", "l_discount" \
+                SELECT "l_quantity", "l_discount" \
                 FROM "lineitem" \
                 WHERE "l_discount" < 0.08 \
                 AND "l_quantity" < 25 \
-                GROUP BY "l_quantity", "l_discount"
+                AND "l_comment" LIKE '%a%'
                 """;
 
         String q2 = """
-                SELECT count("l_quantity"), "l_quantity" \
+                SELECT "l_quantity" \
                 FROM "lineitem" \
                 WHERE "l_discount" < 0.04 \
                 AND "l_quantity" < 30 \
-                GROUP BY "l_quantity"
+                AND "l_comment" LIKE '%b%'
                 """;
 
         List<BatchedQuery> b = batcher.batch(List.of(q2, q1));

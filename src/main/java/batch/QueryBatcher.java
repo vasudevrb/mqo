@@ -361,6 +361,13 @@ public class QueryBatcher {
             return;
         }
 
+        //The operator could also be 'LIKE', in which case we need to handle it at the outset
+        if (p1.isOperator("LIKE")) {
+            operator.addTerm(p1);
+            operator.addTerm(p2);
+            return;
+        }
+
         if (p1.isOperator(">=") || p1.isOperator(">")) {
             if (p2.isOperator(">") || p2.isOperator(">=")) {
                 boolean p1Greater = p1.isOperator(">=") ? p1.compareTo(p2) >= 0 : p1.compareTo(p2) > 0;
@@ -418,16 +425,19 @@ public class QueryBatcher {
                         : splitOr.contains("<=") ? splitOr.indexOf("<=")
                         : splitOr.contains("<") ? splitOr.indexOf("<")
                         : splitOr.contains(">") ? splitOr.indexOf(">")
-                        : splitOr.indexOf("=");
+                        : splitOr.contains("=") ? splitOr.indexOf("=")
+                        : splitOr.indexOf("LIKE");
 
                 if (firstOpIndex == -1) {
                     System.out.println("Can't find index of operator in " + splitOr);
                 }
 
-                List<String> operandVal = asList(splitOr.substring(0, firstOpIndex).trim(),
-                        splitOr.substring(firstOpIndex, firstOpIndex + 2).trim(),
-                        splitOr.substring(firstOpIndex + 2).trim());
-                Predicate p = new Predicate(operandVal.get(0), operandVal.get(1), operandVal.get(2));
+                int opEndIndex = splitOr.contains(" LIKE ") ? firstOpIndex + 5 : firstOpIndex + 2;
+                String lOperand = splitOr.substring(0, firstOpIndex).trim();
+                String operator = splitOr.substring(firstOpIndex, opEndIndex).trim();
+                String rOperand = splitOr.substring(opEndIndex).trim();
+
+                Predicate p = new Predicate(lOperand, operator, rOperand);
                 p.isJoin = isTableName(splitOr.substring(firstOpIndex + 2));
 
                 ps.add(p);
