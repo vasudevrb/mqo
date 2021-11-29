@@ -12,6 +12,8 @@ import java.util.concurrent.CompletableFuture;
 
 public class Cache<T> {
 
+    public static int LATEST_ID = 0;
+
     private final List<CacheItem<T>> items;
     private final Dimension dimension;
     private final ReplacementPolicy<T> policy;
@@ -38,10 +40,29 @@ public class Cache<T> {
 
     public synchronized void add(T item) {
         long value = dimension.getType() == Dimension.Type.SIZE_BYTES
-                ? QueryUtils.getTableSize((RelOptMaterialization) item)
+                ? 0 //Value will be calculated asynchronously
                 : 1;
 
+        final int thisItemId = LATEST_ID;
         this.items.add(new CacheItem<>(item, value));
+
+        if (dimension.getType() == Dimension.Type.SIZE_BYTES) {
+            /*
+            There is a small issue here with threads. As this is written, for the last query, the program
+            might end before the Future is complete.
+            I Don't think it'll be a problem because the program has to end after executing a certain number of
+            queries anyway. But something to keep in mind.
+            */
+            CompletableFuture.runAsync(() -> {
+                long size = QueryUtils.getTableSize((RelOptMaterialization) item);
+                CacheItem<T> it = this.items.stream().filter(x -> x.getId() == thisItemId).findFirst().orElse(null);
+                if (it != null) {
+                    System.out.println("Got size async for id" + thisItemId + ". Setting to item");
+                    it.setValue(size);
+                    currentCacheSize += size;
+                }
+            });
+        }
         currentCacheSize += value;
         System.out.println("Added item: Cache size is " + formatCacheSize());
         cacheSizeWatcher.onCacheSizeChange();

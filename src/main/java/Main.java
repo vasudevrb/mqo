@@ -10,7 +10,7 @@ public class Main {
 
         Configuration config = Configuration.initialize();
         Window window = new Window(config);
-        window.testBatch();
+        window.run();
 
 //        Tester tester = new Tester(config);
 //        tester.testBatch();
