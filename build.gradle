@@ -21,6 +21,7 @@ dependencies {
     implementation 'org.apache.calcite:calcite-core:1.28.0'
     implementation 'com.bpodgursky:jbool_expressions:1.23'
     implementation 'org.apache.commons:commons-jexl3:3.2.1'
+    implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'commons-io:commons-io:2.11.0'
     implementation 'org.openjdk.jol:jol-core:0.16'
