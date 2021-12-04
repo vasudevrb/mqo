@@ -73,12 +73,13 @@ public class Configuration {
 
         Properties configProperties = new Properties();
         configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
+        configProperties.put(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(), Boolean.FALSE.toString());
         configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
         configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
 
         CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
 
-        Connection connection = DriverManager.getConnection("jdbc:calcite:");
+        Connection connection = DriverManager.getConnection("jdbc:calcite:", configProperties);
         CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
 
 
@@ -116,7 +117,7 @@ public class Configuration {
 //        planner.addRule(Bindables.BINDABLE_TABLE_SCAN_RULE);
 //        planner.addRule(Bindables.BINDABLE_JOIN_RULE);
 //        planner.addRule(Bindables.FROM_NONE_RULE);
-        planner.addRule(EnumerableRules.TO_BINDABLE);
+//        planner.addRule(EnumerableRules.TO_BINDABLE);
 //
         EnumerableRules.rules().stream()
                 .filter(rule -> rule != EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE)
