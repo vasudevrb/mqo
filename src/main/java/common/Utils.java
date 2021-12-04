@@ -1,12 +1,21 @@
 package common;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.Collectors;
 
 public class Utils {
+
+    static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
+    static long seed = 14124987135L;
+    static Random rnd = new Random(seed);
+    static Random rnd2 = new Random();
 
     public static String getPrintableSql(String sql) {
         return sql.replace(" FROM ", "\nFROM ")
@@ -50,18 +59,12 @@ public class Utils {
         return c >= '0' && c <= '9';
     }
 
-    static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
-    static long seed = 14124987135L;
-    static Random rnd = new Random(seed);
-
-    public static String randomString(int len){
+    public static String randomString(int len) {
         StringBuilder sb = new StringBuilder(len);
-        for(int i = 0; i < len; i++)
+        for (int i = 0; i < len; i++)
             sb.append(AB.charAt(rnd.nextInt(AB.length())));
         return sb.toString();
     }
-
-    static Random rnd2 = new Random();
 
     public static int getRandomGaussian() {
         return (int) (5 + rnd2.nextGaussian() * 3) * 1000;
@@ -81,5 +84,34 @@ public class Utils {
 
     public static double getRandomNumber(double low, double high) {
         return rnd2.nextDouble() * (high - low) + low;
+    }
+
+    public static void restartPostgres() {
+        String[] winCmdStart = {"C:\\Users\\Vasu\\Desktop\\Elevate.exe", "net", "start", "postgresql-x64-14"};
+        String[] winCmdStop = {"C:\\Users\\Vasu\\Desktop\\Elevate.exe", "net", "stop", "postgresql-x64-14"};
+        String[] linuxCmdStart = {"sudo", "-S", "usav1234", "service", "postgresql", "start"};
+        String[] linuxCmdStop = {"sudo", "-S", "usav1234", "service", "postgresql", "stop"};
+
+        try {
+            runCommand(SystemUtils.IS_OS_WINDOWS_10 ? winCmdStop : linuxCmdStop);
+            runCommand(SystemUtils.IS_OS_WINDOWS_10 ? winCmdStart : linuxCmdStart);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void runCommand(String[] command) {
+        try {
+            Process process = new ProcessBuilder(command).start();
+            InputStream inputStream = process.getInputStream();
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                System.out.println(line);
+            }
+        } catch (Exception ex) {
+            System.out.println("Exception : " + ex);
+        }
     }
 }
