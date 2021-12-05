@@ -11,7 +11,6 @@ import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.commons.io.FileUtils;
 import test.QueryProvider;
 
 import java.util.List;
@@ -36,8 +35,8 @@ public class Window {
         this.batcher = new QueryBatcher(configuration, executor);
         this.optimizer = new MViewOptimizer(configuration);
 
-//        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(10));
-        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(100 * FileUtils.ONE_MB));
+        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(10));
+//        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(100 * FileUtils.ONE_MB));
     }
 
     public void testBatch() {

@@ -13,7 +13,7 @@ public class Main {
 
         Configuration config = Configuration.initialize();
 //        Window window = new Window(config);
-//        window.run();
+//        window.testBatch();
 
 //        Tester tester = new Tester(config);
 //        tester.testBatch();
