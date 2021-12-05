@@ -19,7 +19,7 @@ SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_avail
 ==========================
 % 4
 
-SELECT "c_custkey", "c_name", "c_phone", "c_acctbal" from "customer" where "c_acctbal" between %.2f and %.2f
+SELECT "c_custkey", "c_name", "c_acctbal" from "customer" where "c_acctbal" between %.2f and %.2f
 
 ==========================
 % 5
@@ -77,7 +77,7 @@ WHERE ("ps_availqty" < %.2f AND "ps_partkey" < %.2f) OR ("ps_availqty" > %.2f AN
 
 SELECT "c_acctbal", "c_name", "c_custkey"
 FROM "customer"
-WHERE "c_acctbal" < 1000 AND ("c_custkey" < %.2f OR "c_custkey" > %.2f) OR "c_acctbal" < %.2f
+WHERE "c_acctbal" < %.2f AND ("c_custkey" < %.2f OR "c_custkey" > %.2f) OR "c_acctbal" < %.2f
 
 ==========================
 
@@ -115,7 +115,7 @@ WHERE "o_totalprice" < %.2f OR ("c_custkey" > %.2f AND "o_totalprice" < %.2f) OR
 
 SELECT "ps_partkey", "ps_supplycost", "ps_availqty", "s_name", "s_suppkey", "s_acctbal"
 FROM "partsupp" JOIN "supplier" on "ps_suppkey" = "s_suppkey"
-WHERE "ps_availqty" > %.2f AND ("s_acctbal" < %.2f OR "s_acctbal" > %.2f) AND "ps_supplycost" > %.2f
+WHERE "ps_availqty" > %.2f AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 
 ==========================
 
@@ -223,7 +223,7 @@ GROUP BY "s_name", "c_name", "n_nationkey"
 
 SELECT "c_name", sum("c_acctbal"), avg("o_totalprice")
 FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
-WHERE "o_totalprice" < 100000 OR ("c_custkey" > %.2f AND "o_totalprice" < %.2f) OR ("o_totalprice" < %.2f)
+WHERE "o_totalprice" < %.2f OR ("c_custkey" > %.2f AND "o_totalprice" < %.2f) OR ("o_totalprice" < %.2f)
 GROUP BY "c_name"
 
 ==========================
@@ -231,5 +231,5 @@ GROUP BY "c_name"
 
 SELECT "s_suppkey", "ps_partkey", avg("ps_supplycost"), sum("ps_availqty"), avg("s_acctbal")
 FROM "partsupp" JOIN "supplier" on "ps_suppkey" = "s_suppkey"
-WHERE "ps_availqty" > %.2f AND ("s_acctbal" < %.2f OR "s_acctbal" > %.2f) AND "ps_supplycost" > %.2f
+WHERE "ps_availqty" > %.2f AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 GROUP BY "s_suppkey", "ps_partkey"
