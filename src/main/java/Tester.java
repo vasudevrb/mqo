@@ -6,10 +6,13 @@ import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import test.QueryProvider;
+import test.QueryReader;
 
+import java.io.IOException;
 import java.util.*;
 
 public class Tester {
@@ -105,5 +108,40 @@ public class Tester {
         Collections.sort(sizes);
         List<String> sizeStrings = sizes.stream().map(FileUtils::byteCountToDisplaySize).toList();
         System.out.println(sizeStrings);
+    }
+
+    public void testFindDerivablePercentage() throws IOException {
+        boolean deAgg = true;
+        List<String> queries = QueryReader.getQueries(10);
+
+        MViewOptimizer op = new MViewOptimizer(config);
+        QueryExecutor executor = new QueryExecutor(config);
+
+        for (int i = 0; i < 5; i++) {
+            Utils.shuffle(queries);
+        }
+
+        List<RelOptMaterialization> materializations = new ArrayList<>();
+        int numDerivable = 0;
+        outerloop:
+        for (int i=0; i < queries.size(); i++) {
+            System.out.println("Processing " + i);
+            for (RelOptMaterialization m : materializations) {
+                RelNode sub = op.substitute(m, executor.getLogicalPlan(queries.get(i)));
+                if (sub != null) {
+                    numDerivable++;
+                    continue outerloop;
+                }
+            }
+
+            String mat = queries.get(i);
+            SqlNode qp = executor.parse(mat);
+            if (QueryUtils.isAggregate(qp)) {
+                mat = executor.deAggregateQuery(qp);
+            }
+
+            materializations.add(op.materialize(Utils.randomString(7), mat));
+        }
+        System.out.println("Number of derivable: " + numDerivable);
     }
 }

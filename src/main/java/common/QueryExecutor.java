@@ -155,7 +155,7 @@ public class QueryExecutor {
         return where;
     }
 
-    private String deAggregateQuery(SqlNode node) {
+    public String deAggregateQuery(SqlNode node) {
         return recreateQuery(node, selectList(node, false), where(node).replace("`", "\""), Collections.emptyList());
     }
 }
