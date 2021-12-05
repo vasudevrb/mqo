@@ -12,6 +12,10 @@ import java.util.concurrent.CompletableFuture;
 
 public class Cache<T> {
 
+    //This tracks the time taken to calculate the size of the materialized view
+    //so that we can subtract this from the execution time.
+    public int subtractable;
+
     private final List<CacheItem<T>> items;
     private final Dimension dimension;
     private final ReplacementPolicy<T> policy;
@@ -37,9 +41,11 @@ public class Cache<T> {
     }
 
     public synchronized void add(T item) {
+        long t1 = System.currentTimeMillis();
         long value = dimension.getType() == Dimension.Type.SIZE_BYTES
                 ? QueryUtils.getTableSize((RelOptMaterialization) item)
                 : 1;
+        subtractable += (System.currentTimeMillis() - t1);
 
         this.items.add(new CacheItem<>(item, value));
         currentCacheSize += value;
