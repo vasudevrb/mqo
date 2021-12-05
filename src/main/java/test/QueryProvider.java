@@ -10,13 +10,14 @@ import java.util.function.Consumer;
 
 public class QueryProvider {
 
-    private List<String> queries;
+    public List<String> queries;
 
     private Thread providerThread;
 
     public QueryProvider() {
         try {
-            queries = QueryReader.getQueries();
+            queries = QueryReader.getQueries(1);
+            Utils.shuffle(queries);
         } catch (IOException e) {
             e.printStackTrace();
         }

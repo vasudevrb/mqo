@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -88,6 +89,10 @@ public class Utils {
 
     public static double getQueryOperandBetween(List<Double> mnmx) {
         return queryGenRng.nextDouble(mnmx.get(0), mnmx.get(1));
+    }
+
+    public static <T> void shuffle(List<T> list) {
+        Collections.shuffle(list, queryGenRng);
     }
 
     public static void restartPostgres() {
