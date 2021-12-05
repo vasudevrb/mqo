@@ -134,20 +134,13 @@ public class QueryUtils {
         return count;
     }
 
-    public static long getTableSize(RelOptMaterialization materialization) {
-        long t1 = System.currentTimeMillis();
+    public static long getTableSize(String query, RelOptMaterialization materialization, QueryExecutor executor) {
         RelNode table = materialization.tableRel;
         RelMetadataQuery mq = table.getCluster().getMetadataQuery();
         Double avgRowSize = mq.getAverageRowSize(table);
-         if (avgRowSize == null) {
-            System.out.println("=====Average row size is null, shouldn't be=====");
-        }
-//        long rowCount = (long) table.estimateRowCount(table.getCluster().getMetadataQuery());
-        long rowCount = (long) mq.getCumulativeCost(table).getRows();
-        long size = (long) (rowCount * (avgRowSize != null ? avgRowSize : 1));
 
-        System.out.println("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms");
-        return size;
+        long rowCount = RowCounter.countRows(query, executor);
+        return (long) (rowCount * (avgRowSize != null ? avgRowSize : 1));
     }
 
     public static RelOptCost getCost(RelNode node) {
