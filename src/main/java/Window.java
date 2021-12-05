@@ -74,14 +74,22 @@ public class Window {
     public void run() {
         AtomicInteger count = new AtomicInteger();
         provider.listen(qs -> {
-            count.getAndIncrement();
             System.out.println("===============================================");
-            handle(qs);
-            if (count.get() == 15) {
+            System.out.println(count.get() + "\n" + Utils.getPrintableSql(qs.get(0)));
+            count.getAndIncrement();
+            runSequentially(qs);
+//            handle(qs);
+            if (count.get() == 320) {
                 System.out.println("Stopping...");
                 provider.stopListening();
             }
         });
+    }
+
+    private void runSequentially(List<String> queries) {
+        for (String query : queries) {
+            executor.execute(executor.getLogicalPlan(query), null);
+        }
     }
 
     private void handle(List<String> queries) {

@@ -29,7 +29,8 @@ public class Tester {
     }
 
     public void testMVSubstitution() throws Exception {
-        List<String> matQueries = queryProvider.getBatch(4);
+//        List<String> matQueries = queryProvider.getBatch(4);
+        List<String> matQueries = new ArrayList<>();
 
         //Regular execution
         RelNode regNode = executor.getLogicalPlan(matQueries.get(0));
@@ -61,7 +62,7 @@ public class Tester {
             long t1 = System.currentTimeMillis();
 
             //Serial
-            for (String q : queryProvider.getBatch(2)) {
+            for (String q : new ArrayList<String>()) {
                 executor.execute(executor.getLogicalPlan(q), rs -> System.out.println("Row count: " + QueryUtils.countRows(rs)));
             }
 

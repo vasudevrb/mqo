@@ -22,10 +22,6 @@ public class QueryProvider {
         }
     }
 
-    public List<String> getBatch(int index) {
-        return List.of(queries.get(index)); //TODO: Fix this
-    }
-
     public void listen(Consumer<List<String>> consumer) {
         BlockingQueue<List<String>> blockingQueue = new LinkedBlockingDeque<>();
         providerThread = new Thread(new Provider(this, blockingQueue));
@@ -63,13 +59,15 @@ public class QueryProvider {
             //TODO: Try a different probability distribution maybe?
             while (true) {
                 try {
-                    Thread.sleep(Utils.getRandomNumber(4 * 1000));
+                    Thread.sleep(Utils.getRandomNumber(2 * 1000));
 //                    List<String> query = i == 0
 //                            ? queryProvider.getBatch(0)
 //                            : List.of(queryProvider.getBatch(0).get(i % 3));
-                    List<String> query = List.of(queryProvider.getBatch(3).get(i % 15));
+                    //TODO: Send list of queries sometimes
+                    List<String> query = List.of(queryProvider.queries.get(i));
                     queue.put(query);
                     i++;
+                    i %= queryProvider.queries.size();
                 } catch (InterruptedException e) {
                     break;
                 }
