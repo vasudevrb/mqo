@@ -6,11 +6,13 @@ import cache.dim.Dimension;
 import cache.policy.LRUPolicy;
 import common.Configuration;
 import common.QueryExecutor;
+import common.QueryUtils;
 import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.commons.io.FileUtils;
 import test.QueryProvider;
 
 import java.util.List;
@@ -25,8 +27,10 @@ public class Window {
 
     private final QueryBatcher batcher;
     private final MViewOptimizer optimizer;
-
     private final Cache<RelOptMaterialization> cache;
+    //This tracks the time taken to calculate the size of the materialized view
+    //so that we can subtract this from the execution time.
+    public long subtractable;
 
     public Window(Configuration configuration) {
         this.executor = new QueryExecutor(configuration);
@@ -35,8 +39,8 @@ public class Window {
         this.batcher = new QueryBatcher(configuration, executor);
         this.optimizer = new MViewOptimizer(configuration);
 
-        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(10));
-//        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(100 * FileUtils.ONE_MB));
+//        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(30));
+        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(100 * FileUtils.ONE_MB));
     }
 
     public void testBatch() {
@@ -73,14 +77,15 @@ public class Window {
 
     public void run() {
         AtomicInteger count = new AtomicInteger();
+        final long t1 = System.currentTimeMillis();
         provider.listen(qs -> {
             System.out.println("===============================================");
             System.out.println(count.get() + "\n" + Utils.getPrintableSql(qs.get(0)));
             count.getAndIncrement();
-            runSequentially(qs);
-//            handle(qs);
-            if (count.get() == 320) {
-                System.out.println("Stopping...");
+//            runSequentially(qs);
+            handle(qs);
+            if (count.get() == 32) {
+                System.out.println("Stopping... Time: " + (System.currentTimeMillis() - t1 - subtractable) + " ms");
                 provider.stopListening();
             }
         });
@@ -118,7 +123,15 @@ public class Window {
 
         if (substituted == null) {
             RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), q);
-            cache.add(materialization);
+
+            long t1 = System.currentTimeMillis();
+            long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
+                    ? QueryUtils.getTableSize(q, materialization, executor)
+                    : 1;
+            subtractable += (System.currentTimeMillis() - t1);
+            System.out.println("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + FileUtils.byteCountToDisplaySize(value));
+
+            cache.add(materialization, value);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from
             //TODO: materialized table
             executor.execute(logicalPlan, rs -> System.out.println("Executed " + q.replace("\n", " ")));
@@ -148,7 +161,14 @@ public class Window {
             RelNode substitutable = getSubstitution(executor.getLogicalPlan(bq.sql));
             if (substitutable == null) {
                 RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), bq.sql);
-                cache.add(materialization);
+
+                long t1 = System.currentTimeMillis();
+                long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
+                        ? QueryUtils.getTableSize(bq.sql, materialization, executor)
+                        : 1;
+                subtractable += (System.currentTimeMillis() - t1);
+
+                cache.add(materialization, value);
             }
 
             for (SqlNode partQuery : bq.parts) {
