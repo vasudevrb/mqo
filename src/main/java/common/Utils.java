@@ -7,15 +7,19 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
 public class Utils {
 
-    static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
-    static long seed = 14124987135L;
-    static Random rnd = new Random(seed);
-    static Random rnd2 = new Random();
+    private static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
+    private static final long QUERY_GEN_SEED = 152634546543L;
+    private static final long seed = 14124987135L;
+
+    private static final Random rnd = new Random(seed);
+    private static final Random rnd2 = new Random();
+    private static final Random queryGenRng = new Random(QUERY_GEN_SEED);
 
     public static String getPrintableSql(String sql) {
         return sql.replace(" FROM ", "\nFROM ")
@@ -82,8 +86,8 @@ public class Utils {
         System.out.println(isFloat("3.4134"));
     }
 
-    public static double getRandomNumber(double low, double high) {
-        return rnd2.nextDouble() * (high - low) + low;
+    public static double getQueryOperandBetween(List<Double> mnmx) {
+        return queryGenRng.nextDouble(mnmx.get(0), mnmx.get(1));
     }
 
     public static void restartPostgres() {

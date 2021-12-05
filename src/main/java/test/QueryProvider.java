@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 
 public class QueryProvider {
 
-    private List<List<String>> queries;
+    private List<String> queries;
 
     private Thread providerThread;
 
@@ -23,7 +23,7 @@ public class QueryProvider {
     }
 
     public List<String> getBatch(int index) {
-        return queries.get(index);
+        return List.of(queries.get(index)); //TODO: Fix this
     }
 
     public void listen(Consumer<List<String>> consumer) {
