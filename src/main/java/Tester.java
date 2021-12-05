@@ -2,16 +2,15 @@ import batch.QueryBatcher;
 import common.Configuration;
 import common.QueryExecutor;
 import common.QueryUtils;
+import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import test.QueryProvider;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Tester {
 
@@ -91,5 +90,20 @@ public class Tester {
         times.forEach(stats::addValue);
 
         System.out.println(stats);
+    }
+
+    public void printQuerySizes() {
+        List<Long> sizes = new ArrayList<>();
+        List<String> queries = queryProvider.queries;
+        for (String query : queries) {
+            MViewOptimizer op = new MViewOptimizer(config);
+            QueryExecutor executor = new QueryExecutor(config);
+            RelOptMaterialization m = op.materialize(Utils.randomString(5), query);
+            sizes.add(QueryUtils.getTableSize(query, m, executor));
+        }
+
+        Collections.sort(sizes);
+        List<String> sizeStrings = sizes.stream().map(FileUtils::byteCountToDisplaySize).toList();
+        System.out.println(sizeStrings);
     }
 }
