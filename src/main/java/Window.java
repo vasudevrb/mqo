@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static common.Logger.logTime;
+
 public class Window {
 
     private final QueryExecutor executor;
@@ -32,7 +34,7 @@ public class Window {
     //so that we can subtract this from the execution time.
     public long subtractable;
 
-    public Window(Configuration configuration) {
+    public Window(Configuration configuration, int sizeMB) {
         this.executor = new QueryExecutor(configuration);
         this.provider = new QueryProvider();
 
@@ -40,7 +42,7 @@ public class Window {
         this.optimizer = new MViewOptimizer(configuration);
 
 //        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(30));
-        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(100 * FileUtils.ONE_MB));
+        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
     }
 
     public void testBatch() {
@@ -129,7 +131,7 @@ public class Window {
                     ? QueryUtils.getTableSize(q, materialization, executor)
                     : 1;
             subtractable += (System.currentTimeMillis() - t1);
-            System.out.println("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + FileUtils.byteCountToDisplaySize(value));
+            logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + FileUtils.byteCountToDisplaySize(value));
 
             cache.add(materialization, value);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from

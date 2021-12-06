@@ -6,11 +6,14 @@ import cache.dim.Dimension;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static common.Logger.logCache;
+
 public class LRUPolicy<T> implements ReplacementPolicy<T> {
 
     @Override
     public long clean(List<CacheItem<T>> cacheItems, long currentSize, Dimension dimension, float proportion) {
         int newSize = (int) (dimension.getValue() * proportion);
+        logCache("First cache clean called when cache size is " + currentSize + ", num items: " + cacheItems.size());
 
         while (currentSize > newSize) {
             int minIdx = IntStream.range(0, cacheItems.size())
@@ -19,7 +22,6 @@ public class LRUPolicy<T> implements ReplacementPolicy<T> {
 
             CacheItem<T> item = cacheItems.get(minIdx);
             currentSize -= item.getValue();
-            System.out.println("Removing cache index " + minIdx);
             cacheItems.remove(minIdx);
         }
 

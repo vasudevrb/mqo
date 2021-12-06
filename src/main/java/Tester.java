@@ -144,4 +144,10 @@ public class Tester {
         }
         System.out.println("Number of derivable: " + numDerivable);
     }
+
+    public void testCacheSizeMetrics(int size) {
+        System.out.println("Setting cache size " + size + " MB");
+        Window window = new Window(config, size);
+        window.run();
+    }
 }
