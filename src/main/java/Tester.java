@@ -1,15 +1,12 @@
 import batch.QueryBatcher;
-import common.Configuration;
-import common.QueryExecutor;
-import common.QueryUtils;
-import common.Utils;
+import cache.policy.ReplacementPolicy;
+import common.*;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import test.QueryProvider;
 import test.QueryReader;
 
 import java.io.IOException;
@@ -21,13 +18,13 @@ public class Tester {
     private final Configuration config;
     private final MViewOptimizer optimizer;
 
-    private final QueryProvider queryProvider;
+//    private final QueryProvider queryProvider;
 
     public Tester(Configuration config) {
         this.optimizer = new MViewOptimizer(config);
         this.executor = new QueryExecutor(config);
         this.config = config;
-        this.queryProvider = new QueryProvider();
+//        this.queryProvider = new QueryProvider();
     }
 
     public void testMVSubstitution() throws Exception {
@@ -95,37 +92,43 @@ public class Tester {
         System.out.println(stats);
     }
 
-    public void printQuerySizes() {
+    public void printQuerySizes() throws IOException {
         List<Long> sizes = new ArrayList<>();
-        List<String> queries = queryProvider.queries;
-        for (String query : queries) {
-            MViewOptimizer op = new MViewOptimizer(config);
-            QueryExecutor executor = new QueryExecutor(config);
-            RelOptMaterialization m = op.materialize(Utils.randomString(5), query);
-            sizes.add(QueryUtils.getTableSize(query, m, executor));
+        List<String> queries = QueryReader.getQueries(20);
+        for (int i = 0; i < queries.size(); i++) {
+            System.out.println("============================================");
+            System.out.println("Executing " + i);
+            String query = queries.get(i);
+            System.out.println(Utils.getPrintableSql(query));
+            RelOptMaterialization m = optimizer.materialize(Utils.randomString(5), query);
+            long size = QueryUtils.getTableSize(query, m, executor);
+            m = null;
+            sizes.add(size);
+            Logger.logCache("Size: " + FileUtils.byteCountToDisplaySize(size));
         }
+
+        System.out.println("Unsorted byte sizes");
+        System.out.println(sizes);
 
         Collections.sort(sizes);
         List<String> sizeStrings = sizes.stream().map(FileUtils::byteCountToDisplaySize).toList();
+        System.out.println("Sorted readable sizes");
         System.out.println(sizeStrings);
     }
 
     public void testFindDerivablePercentage() throws IOException {
         boolean deAgg = true;
-        List<String> queries = QueryReader.getQueries(10);
+        List<String> queries = QueryReader.getQueries(20);
 
         MViewOptimizer op = new MViewOptimizer(config);
         QueryExecutor executor = new QueryExecutor(config);
 
-        for (int i = 0; i < 5; i++) {
-            Utils.shuffle(queries);
-        }
-
         List<RelOptMaterialization> materializations = new ArrayList<>();
         int numDerivable = 0;
+        Utils.shuffle(queries);
         outerloop:
-        for (int i=0; i < queries.size(); i++) {
-            System.out.println("Processing " + i);
+        for (int i = 0; i < queries.size(); i++) {
+            System.out.print("\rProcessing " + i);
             for (RelOptMaterialization m : materializations) {
                 RelNode sub = op.substitute(m, executor.getLogicalPlan(queries.get(i)));
                 if (sub != null) {
@@ -142,12 +145,13 @@ public class Tester {
 
             materializations.add(op.materialize(Utils.randomString(7), mat));
         }
+        System.out.println();
         System.out.println("Number of derivable: " + numDerivable);
     }
 
-    public void testCacheSizeMetrics(int size) {
+    public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
         System.out.println("Setting cache size " + size + " MB");
-        Window window = new Window(config, size);
+        Window window = new Window(config, size, policy);
         window.run();
     }
 }

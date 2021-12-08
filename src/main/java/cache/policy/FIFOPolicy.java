@@ -5,10 +5,14 @@ import cache.dim.Dimension;
 
 import java.util.List;
 
+import static common.Logger.logCache;
+
 public class FIFOPolicy<T> implements ReplacementPolicy<T> {
 
     @Override
     public long clean(List<CacheItem<T>> cacheItems, long currentSize, Dimension dimension, float proportion) {
+        logCache("Cache clean called when cache size is " + currentSize + ", num items: " + cacheItems.size());
+
         int newSize = (int) (dimension.getValue() * proportion);
         while (currentSize > newSize) {
             currentSize -= cacheItems.get(0).getValue();
@@ -17,5 +21,10 @@ public class FIFOPolicy<T> implements ReplacementPolicy<T> {
         }
 
         return currentSize;
+    }
+
+    @Override
+    public String toString() {
+        return "FIFO";
     }
 }

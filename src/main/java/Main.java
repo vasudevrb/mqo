@@ -1,12 +1,12 @@
 import cache.Cache;
+import cache.policy.FIFOPolicy;
+import cache.policy.LFUPolicy;
+import cache.policy.LRUPolicy;
+import cache.policy.ReplacementPolicy;
 import common.Configuration;
+import org.apache.calcite.plan.RelOptMaterialization;
 
 import java.io.PrintStream;
-import java.util.Arrays;
-
-import static com.diogonunes.jcolor.Ansi.colorize;
-import static com.diogonunes.jcolor.Attribute.MAGENTA_BACK;
-import static com.diogonunes.jcolor.Attribute.YELLOW_TEXT;
 
 public class Main {
 
@@ -15,14 +15,22 @@ public class Main {
     public static void main(String[] args) throws Exception {
         hideLoggerWarnings();
 
+//        args = new String[]{"testCacheSize", "5", "lru"};
+
         Configuration config = Configuration.initialize();
 
-        if (args[0].equals(TEST_MODE_CACHE_SIZE)) {
-            Tester tester = new Tester(config);
-            tester.testCacheSizeMetrics(Cache.SIZES_MB.get(Integer.parseInt(args[1])));
+        Tester tester = new Tester(config);
+        if (args.length > 0 && args[0].equals(TEST_MODE_CACHE_SIZE)) {
+            int size = Cache.SIZES_MB.get(Integer.parseInt(args[1]));
+            ReplacementPolicy<RelOptMaterialization> pol = args[2].equals("fifo") ? new FIFOPolicy<>()
+                    : args[2].equals("lfu") ? new LFUPolicy<>()
+                    : new LRUPolicy<>();
+
+            tester.testCacheSizeMetrics(size, pol);
         }
 
-        System.out.println(colorize("Got arguments " + Arrays.toString(args), YELLOW_TEXT(), MAGENTA_BACK()));
+//        tester.testFindDerivablePercentage();
+        tester.printQuerySizes();
     }
 
     public static void hideLoggerWarnings() {

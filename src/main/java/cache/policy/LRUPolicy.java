@@ -13,7 +13,7 @@ public class LRUPolicy<T> implements ReplacementPolicy<T> {
     @Override
     public long clean(List<CacheItem<T>> cacheItems, long currentSize, Dimension dimension, float proportion) {
         int newSize = (int) (dimension.getValue() * proportion);
-        logCache("First cache clean called when cache size is " + currentSize + ", num items: " + cacheItems.size());
+        logCache("Cache clean called when cache size is " + currentSize + ", num items: " + cacheItems.size());
 
         while (currentSize > newSize) {
             int minIdx = IntStream.range(0, cacheItems.size())
@@ -26,5 +26,10 @@ public class LRUPolicy<T> implements ReplacementPolicy<T> {
         }
 
         return currentSize;
+    }
+
+    @Override
+    public String toString() {
+        return "LRU";
     }
 }

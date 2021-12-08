@@ -3,7 +3,7 @@ import batch.data.BatchedQuery;
 import cache.Cache;
 import cache.CacheItem;
 import cache.dim.Dimension;
-import cache.policy.LRUPolicy;
+import cache.policy.ReplacementPolicy;
 import common.Configuration;
 import common.QueryExecutor;
 import common.QueryUtils;
@@ -34,7 +34,7 @@ public class Window {
     //so that we can subtract this from the execution time.
     public long subtractable;
 
-    public Window(Configuration configuration, int sizeMB) {
+    public Window(Configuration configuration, int sizeMB, ReplacementPolicy<RelOptMaterialization> policy) {
         this.executor = new QueryExecutor(configuration);
         this.provider = new QueryProvider();
 
@@ -42,7 +42,7 @@ public class Window {
         this.optimizer = new MViewOptimizer(configuration);
 
 //        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(30));
-        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
+        this.cache = new Cache<>(policy, Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
     }
 
     public void testBatch() {
