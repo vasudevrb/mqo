@@ -15,7 +15,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         hideLoggerWarnings();
 
-//        args = new String[]{"testCacheSize", "5", "lru"};
+        args = new String[]{"testCacheSize", "7", "lru"};
 
         Configuration config = Configuration.initialize();
 
@@ -29,7 +29,7 @@ public class Main {
             tester.testCacheSizeMetrics(size, pol);
         }
 
-        tester.testFindDerivablePercentage();
+//        tester.testFindDerivablePercentage();
 //        tester.testMVSubstitution();
 //        tester.printQuerySizes();
     }
