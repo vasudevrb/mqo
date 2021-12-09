@@ -10,6 +10,13 @@ Loading TPC-H data into postgres
 
 3. Copy csv files into postgres (in psql)
 
-> \copy customer from 'C:/Users/.../...' with CSV DELIMITER '|';
+> \copy customer from '/home/vasu/Documents/tpch-dbgen/data/customer.csv' with CSV DELIMITER '|';
+> \copy lineitem from '/home/vasu/Documents/tpch-dbgen/data/lineitem.csv' with CSV DELIMITER '|';
+> \copy nation from '/home/vasu/Documents/tpch-dbgen/data/nation.csv' with CSV DELIMITER '|';
+> \copy orders from '/home/vasu/Documents/tpch-dbgen/data/orders.csv' with CSV DELIMITER '|';
+> \copy part from '/home/vasu/Documents/tpch-dbgen/data/part.csv' with CSV DELIMITER '|';
+> \copy partsupp from '/home/vasu/Documents/tpch-dbgen/data/partsupp.csv' with CSV DELIMITER '|';
+> \copy region from '/home/vasu/Documents/tpch-dbgen/data/region.csv' with CSV DELIMITER '|';
+> \copy supplier from '/home/vasu/Documents/tpch-dbgen/data/supplier.csv' with CSV DELIMITER '|';
 
 Note: Make sure to use normal slashes for file name, even for windows
