@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static common.Logger.logTime;
+import static common.Utils.humanReadable;
 
 public class Window {
 
@@ -49,8 +50,8 @@ public class Window {
             System.out.println("===============================================");
             System.out.println(count.get() + "\n" + Utils.getPrintableSql(qs.get(0)));
             count.getAndIncrement();
-//            runSequentially(qs);
-            handle(qs);
+            runSequentially(qs);
+//            handle(qs);
             if (count.get() == 32) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
@@ -98,7 +99,7 @@ public class Window {
                     ? QueryUtils.getTableSize(q, materialization, executor)
                     : 1;
             subtractable += (System.currentTimeMillis() - t1);
-            logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + FileUtils.byteCountToDisplaySize(value));
+            logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + humanReadable(value));
 
             cache.add(materialization, value);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from

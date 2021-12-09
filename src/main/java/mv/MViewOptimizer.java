@@ -68,6 +68,7 @@ public class MViewOptimizer {
     public RelNode substitute(RelOptMaterialization materialization, RelNode query) {
         //TODO: Return substitutes that are cheapest to execute
         long t1 = System.currentTimeMillis();
+        //TODO: Profile canonicalize. maybe this can be extracted out.
         List<RelNode> substitutes = new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(query))
                 .go(materialization.tableRel);
         RelNode node = substitutes.stream().findFirst().map(this::uncanonicalize).orElse(null);

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static common.Logger.logCache;
+import static common.Utils.humanReadable;
 
 public class Tester {
 
@@ -115,7 +116,7 @@ public class Tester {
             long size = QueryUtils.getTableSize(query, m, executor);
             m = null;
             sizes.add(size);
-            logCache("Size: " + FileUtils.byteCountToDisplaySize(size));
+            logCache("Size: " + humanReadable(size));
         }
 
         System.out.println("Unsorted byte sizes");

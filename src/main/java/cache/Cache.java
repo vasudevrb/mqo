@@ -2,7 +2,6 @@ package cache;
 
 import cache.dim.Dimension;
 import cache.policy.ReplacementPolicy;
-import org.apache.commons.io.FileUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static common.Logger.logCache;
 import static common.Logger.logTime;
+import static common.Utils.humanReadable;
 
 public class Cache<T> {
 
@@ -62,14 +62,14 @@ public class Cache<T> {
     private String formatCacheSize() {
         return dimension.getType() == Dimension.Type.COUNT
                 ? String.valueOf(currentCacheSize) :
-                FileUtils.byteCountToDisplaySize(currentCacheSize);
-    }
-
-    public interface CacheSizeWatcher {
-        void onCacheSizeChange();
+                humanReadable(currentCacheSize);
     }
 
     public Dimension getDimension() {
         return dimension;
+    }
+
+    public interface CacheSizeWatcher {
+        void onCacheSizeChange();
     }
 }
