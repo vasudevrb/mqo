@@ -29,8 +29,9 @@ public class Main {
             tester.testCacheSizeMetrics(size, pol);
         }
 
-//        tester.testFindDerivablePercentage();
-        tester.printQuerySizes();
+        tester.testFindDerivablePercentage();
+//        tester.testMVSubstitution();
+//        tester.printQuerySizes();
     }
 
     public static void hideLoggerWarnings() {

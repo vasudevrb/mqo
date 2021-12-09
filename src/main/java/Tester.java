@@ -1,16 +1,20 @@
 import batch.QueryBatcher;
 import cache.policy.ReplacementPolicy;
-import common.*;
+import common.Configuration;
+import common.QueryExecutor;
+import common.QueryUtils;
+import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import test.QueryReader;
 
 import java.io.IOException;
 import java.util.*;
+
+import static common.Logger.logCache;
 
 public class Tester {
 
@@ -28,18 +32,25 @@ public class Tester {
     }
 
     public void testMVSubstitution() throws Exception {
-//        List<String> matQueries = queryProvider.getBatch(4);
-        List<String> matQueries = new ArrayList<>();
-
-        //Regular execution
-        RelNode regNode = executor.getLogicalPlan(matQueries.get(0));
-        executor.execute(regNode, null);
+        String mv = """
+                SELECT "o_totalprice", "o_orderkey", "o_custkey", "c_name", "c_acctbal"
+                FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
+                WHERE ("o_totalprice" < 89717.34 AND "c_acctbal" < 300)
+                """;
+        String q = """
+                SELECT "c_name", sum("c_acctbal"), avg("o_totalprice")
+                FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
+                WHERE ("o_totalprice" < 399.27 AND "c_acctbal" < 100) 
+                GROUP BY "c_name"
+                """;
 
         //MV execution
-        RelOptMaterialization materialization = optimizer.materialize("mv0", matQueries.get(0));
-        RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(matQueries.get(1)));
+        RelOptMaterialization materialization = optimizer.materialize("mv0", mv);
+        RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(q));
         if (n != null) {
-            executor.execute(n, null);
+            System.out.println("Can substitute");
+        } else {
+            System.out.println("NO!");
         }
     }
 
@@ -104,7 +115,7 @@ public class Tester {
             long size = QueryUtils.getTableSize(query, m, executor);
             m = null;
             sizes.add(size);
-            Logger.logCache("Size: " + FileUtils.byteCountToDisplaySize(size));
+            logCache("Size: " + FileUtils.byteCountToDisplaySize(size));
         }
 
         System.out.println("Unsorted byte sizes");
@@ -125,10 +136,11 @@ public class Tester {
 
         List<RelOptMaterialization> materializations = new ArrayList<>();
         int numDerivable = 0;
-        Utils.shuffle(queries);
         outerloop:
         for (int i = 0; i < queries.size(); i++) {
-            System.out.print("\rProcessing " + i);
+            System.out.println("=================================");
+            logCache("Processing " + i);
+            System.out.println(Utils.getPrintableSql(queries.get(i)));
             for (RelOptMaterialization m : materializations) {
                 RelNode sub = op.substitute(m, executor.getLogicalPlan(queries.get(i)));
                 if (sub != null) {
@@ -138,15 +150,15 @@ public class Tester {
             }
 
             String mat = queries.get(i);
-            SqlNode qp = executor.parse(mat);
-            if (QueryUtils.isAggregate(qp)) {
-                mat = executor.deAggregateQuery(qp);
-            }
+//            SqlNode qp = executor.parse(mat);
+//            if (QueryUtils.isAggregate(qp)) {
+//                mat = executor.deAggregateQuery(qp);
+//            }
 
             materializations.add(op.materialize(Utils.randomString(7), mat));
         }
         System.out.println();
-        System.out.println("Number of derivable: " + numDerivable);
+        System.out.println("Number of derivable: " + numDerivable + ", " + (((double) numDerivable) * 100 / queries.size()) + "%");
     }
 
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
