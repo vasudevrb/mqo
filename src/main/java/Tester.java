@@ -45,7 +45,7 @@ public class Tester {
                 """;
 
         //MV execution
-        RelOptMaterialization materialization = optimizer.materialize("mv0", mv);
+        RelOptMaterialization materialization = optimizer.materialize(mv, executor.getLogicalPlan(mv));
         RelNode n = optimizer.substitute(materialization, executor.getLogicalPlan(q));
         if (n != null) {
             System.out.println("Can substitute");
@@ -111,7 +111,7 @@ public class Tester {
             System.out.println("Executing " + i);
             String query = queries.get(i);
             System.out.println(Utils.getPrintableSql(query));
-            RelOptMaterialization m = optimizer.materialize(Utils.randomString(5), query);
+            RelOptMaterialization m = optimizer.materialize(query, executor.getLogicalPlan(query));
             long size = QueryUtils.getTableSize(query, m, executor);
             m = null;
             sizes.add(size);
@@ -155,7 +155,7 @@ public class Tester {
 //                mat = executor.deAggregateQuery(qp);
 //            }
 
-            materializations.add(op.materialize(Utils.randomString(7), mat));
+            materializations.add(op.materialize(mat, executor.getLogicalPlan(mat)));
         }
         System.out.println();
         System.out.println("Number of derivable: " + numDerivable + ", " + (((double) numDerivable) * 100 / queries.size()) + "%");

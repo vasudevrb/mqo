@@ -45,38 +45,6 @@ public class Window {
         this.cache = new Cache<>(policy, Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
     }
 
-    public void testBatch() {
-        String q1 = """
-                SELECT "l_quantity", "l_discount" \
-                FROM "lineitem" \
-                WHERE "l_discount" < 0.08 \
-                AND "l_quantity" < 25 \
-                AND "l_comment" LIKE '%a%'
-                """;
-
-        String q2 = """
-                SELECT "l_quantity" \
-                FROM "lineitem" \
-                WHERE "l_discount" < 0.04 \
-                AND "l_quantity" < 30 \
-                AND "l_comment" LIKE '%b%'
-                """;
-
-        List<BatchedQuery> b = batcher.batch(List.of(q2, q1));
-        System.out.println(Utils.getPrintableSql(b.get(0).sql));
-
-        RelOptMaterialization m = optimizer.materialize("asda", b.get(0).sql);
-
-        if (optimizer.substitute(m, executor.getLogicalPlan(q1)) != null) {
-            System.out.println("CAN SUB 1");
-        }
-
-        if (optimizer.substitute(m, executor.getLogicalPlan(q2)) != null) {
-            System.out.println("CAN SUB 2");
-        }
-//        executor.execute(executor.validate(b.get(0).sql), rs -> System.out.println("Rows: " + QueryUtils.countRows(rs)));
-    }
-
     public void run() {
         AtomicInteger count = new AtomicInteger();
         final long t1 = System.currentTimeMillis();
@@ -124,7 +92,7 @@ public class Window {
         RelNode substituted = getSubstitution(logicalPlan);
 
         if (substituted == null) {
-            RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), q);
+            RelOptMaterialization materialization = optimizer.materialize(q, logicalPlan);
 
             long t1 = System.currentTimeMillis();
             long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
@@ -160,9 +128,10 @@ public class Window {
         // Find substitutions and execute
         for (BatchedQuery bq : batched) {
             System.out.println("Batched SQL: " + Utils.getPrintableSql(bq.sql));
-            RelNode substitutable = getSubstitution(executor.getLogicalPlan(bq.sql));
+            RelNode plan = executor.getLogicalPlan(bq.sql);
+            RelNode substitutable = getSubstitution(plan);
             if (substitutable == null) {
-                RelOptMaterialization materialization = optimizer.materialize(Utils.randomString(4), bq.sql);
+                RelOptMaterialization materialization = optimizer.materialize(bq.sql, plan);
 
                 long t1 = System.currentTimeMillis();
                 long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES

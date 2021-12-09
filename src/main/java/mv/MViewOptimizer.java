@@ -2,6 +2,7 @@ package mv;
 
 import common.Configuration;
 import common.QueryExecutor;
+import common.Utils;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.MaterializationService.DefaultTableFactory;
@@ -41,7 +42,8 @@ public class MViewOptimizer {
         this.validator = new QueryExecutor(programConfig);
     }
 
-    public RelOptMaterialization materialize(String mViewName, String mViewQuery) {
+    public RelOptMaterialization materialize(String mViewQuery, RelNode node) {
+        String mViewName = Utils.randomString(7);
         long t1 = System.currentTimeMillis();
         //Create a table with the given materialized view query
         DefaultTableFactory tableFactory = new DefaultTableFactory();
@@ -54,10 +56,8 @@ public class MViewOptimizer {
         LogicalTableScan logicalTableScan = (LogicalTableScan) builder.build();
         EnumerableTableScan replacement = EnumerableTableScan.create(cluster, logicalTableScan.getTable());
 
-        RelNode mvRel = validator.getLogicalPlan(mViewQuery);
-
         //RelOptMaterialization records that this table represents this query. Required for substitution
-        RelOptMaterialization m = new RelOptMaterialization(replacement, mvRel, null, List.of(schema.getName(), mViewName));
+        RelOptMaterialization m = new RelOptMaterialization(replacement, node, null, List.of(schema.getName(), mViewName));
 
         long t2 = System.currentTimeMillis();
         System.out.println("Materializing view took " + (t2 - t1) + " ms");
