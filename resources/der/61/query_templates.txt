@@ -57,7 +57,7 @@ WHERE "ps_partkey" < %.2f AND "ps_availqty" < %.2f AND "ps_supplycost" < %.2f
 
 SELECT "s_suppkey", "s_name", "s_acctbal", "c_name", "c_acctbal", "n_name", "n_nationkey"
 FROM "nation" JOIN "supplier" on "n_nationkey" = "s_nationkey" JOIN "customer" on "n_nationkey" = "c_nationkey"
-WHERE  "c_acctbal" < -813.50 AND ("s_acctbal" < -754.95 OR "s_acctbal" > 5156.32)
+WHERE  "c_acctbal" < %.2f AND ("s_acctbal" < %.2f OR "s_acctbal" > %.2f)
 
 ==========================
 % 9
