@@ -107,7 +107,7 @@ public class Configuration {
 
         SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory, validatorConfig);
 
-        VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
+        CustomPlanner planner = new CustomPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         planner.addRule(PruneEmptyRules.PROJECT_INSTANCE);

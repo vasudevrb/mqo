@@ -4,10 +4,7 @@ import cache.Cache;
 import cache.CacheItem;
 import cache.dim.Dimension;
 import cache.policy.ReplacementPolicy;
-import common.Configuration;
-import common.QueryExecutor;
-import common.QueryUtils;
-import common.Utils;
+import common.*;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
@@ -55,7 +52,9 @@ public class Window {
 //            runSequentially(qs);
             handle(qs);
             if (count.get() == 32) {
-                System.out.println("Stopping... Time: " + (System.currentTimeMillis() - t1 - subtractable) + " ms");
+                long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
+                System.out.println();
+                logTime("Stopping... Time: " + time + " ms");
                 provider.stopListening();
             }
         });
