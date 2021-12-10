@@ -163,7 +163,7 @@ GROUP BY "l_linenumber", "l_quantity"
 
 SELECT "l_linenumber", count("l_quantity"), sum("ps_availqty"), avg("ps_supplycost"), max("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" > %.2f AND "ps_availqty" < %.2f AND "ps_supplycost" < %.2f
+WHERE "ps_partkey" < %.2f AND "ps_availqty" < %.2f AND "ps_supplycost" < %.2f
 GROUP BY "l_linenumber"
 
 ==========================
