@@ -71,6 +71,11 @@ public class QueryReader {
         for (int k = 0; k < scale; k++) {
             for (int i = 0; i < queryTemplates.size(); i++) {
                 String template = queryTemplates.get(i);
+                if (!template.contains("%")) {
+                    queries.add(template);
+                    continue;
+                }
+
                 Double[] values = md.get(i).stream().map(Utils::getQueryOperandBetween).toArray(Double[]::new);
                 queries.add(String.format(template, (Object[]) values));
             }
