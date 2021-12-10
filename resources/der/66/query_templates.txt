@@ -13,28 +13,28 @@ WHERE "l_discount" > 0.06 AND "l_quantity" > 15 AND "l_tax" < 0.07
 
 SELECT "o_orderkey", "o_orderdate", "o_custkey", "o_totalprice"
 FROM "orders"
-WHERE ("o_orderkey" > %.2f AND "o_orderkey" < %.2f) OR "o_totalprice" < %.2f
+WHERE ("o_orderkey" > %d AND "o_orderkey" < %d) OR "o_totalprice" < %.2f
 
 ==========================
 % 3
 
 SELECT "s_name", "s_suppkey", "s_acctbal"
 FROM "supplier"
-WHERE ("s_suppkey" < %.2f OR "s_suppkey" > %.2f) OR "s_acctbal" < %.2f
+WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) OR "s_acctbal" < %.2f
 
 ==========================
 % 4
 
 SELECT "ps_partkey", "ps_suppkey", "ps_availqty", "ps_supplycost"
 FROM "partsupp"
-WHERE ("ps_availqty" < %.2f AND "ps_partkey" < %.2f) OR ("ps_availqty" > %.2f AND "ps_partkey" > %.2f)
+WHERE ("ps_availqty" < %d AND "ps_partkey" < %d) OR ("ps_availqty" > %d AND "ps_partkey" > %d)
 
 ==========================
 % 5
 
 SELECT "c_acctbal", "c_name", "c_custkey"
 FROM "customer"
-WHERE "c_acctbal" < %.2f AND ("c_custkey" < %.2f OR "c_custkey" > %.2f) OR "c_acctbal" < %.2f
+WHERE "c_acctbal" < %.2f AND ("c_custkey" < %d OR "c_custkey" > %d) OR "c_acctbal" < %.2f
 
 ==========================
 
@@ -43,14 +43,14 @@ WHERE "c_acctbal" < %.2f AND ("c_custkey" < %.2f OR "c_custkey" > %.2f) OR "c_ac
 
 SELECT "s_name", "s_suppkey", "s_acctbal", "s_nationkey"
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
-WHERE ("s_suppkey" < %.2f OR "s_suppkey" > %.2f) AND "s_acctbal" < %.2f
+WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) AND "s_acctbal" < %.2f
 
 ==========================
 % 7
 
 SELECT "l_linenumber", "l_quantity", "ps_availqty", "ps_supplycost", "l_discount"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" < %.2f AND "ps_availqty" < %.2f AND "ps_supplycost" < %.2f
+WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 
 ==========================
 % 8
@@ -71,7 +71,7 @@ WHERE "o_totalprice" < %.2f AND "c_acctbal" < %.2f
 
 SELECT "ps_partkey", "ps_supplycost", "ps_availqty", "s_name", "s_suppkey", "s_acctbal"
 FROM "partsupp" JOIN "supplier" on "ps_suppkey" = "s_suppkey"
-WHERE "ps_availqty" > %.2f AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
+WHERE "ps_availqty" > %d AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 
 ==========================
 
@@ -81,7 +81,7 @@ WHERE "ps_availqty" > %.2f AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 
 SELECT count("l_quantity"), "l_quantity"
 FROM "lineitem"
-WHERE "l_discount" > %.2f AND "l_quantity" > %.2f AND "l_tax" < %.2f
+WHERE "l_discount" > %.2f AND "l_quantity" > %d AND "l_tax" < %.2f
 GROUP BY "l_quantity"
 
 ==========================
@@ -89,7 +89,7 @@ GROUP BY "l_quantity"
 
 SELECT count(*), "l_quantity", "l_discount", "l_shipdate"
 FROM "lineitem"
-WHERE "l_discount" > %.2f AND "l_quantity" > %.2f AND "l_tax" < %.2f
+WHERE "l_discount" > %.2f AND "l_quantity" > %d AND "l_tax" < %.2f
 GROUP BY "l_quantity", "l_discount", "l_shipdate"
 
 ==========================
@@ -97,7 +97,7 @@ GROUP BY "l_quantity", "l_discount", "l_shipdate"
 
 SELECT count("o_custkey"), "o_custkey"
 FROM "orders"
-WHERE ("o_orderkey" > %.2f AND "o_orderkey" < %.2f) OR "o_totalprice" < %.2f
+WHERE ("o_orderkey" > %d AND "o_orderkey" < %d) OR "o_totalprice" < %.2f
 group by "o_custkey"
 
 ==========================
@@ -105,7 +105,7 @@ group by "o_custkey"
 
 SELECT "s_name", "s_acctbal"
 FROM "supplier"
-WHERE ("s_suppkey" < %.2f OR "s_suppkey" > %.2f) OR "s_acctbal" < %.2f
+WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) OR "s_acctbal" < %.2f
 GROUP BY "s_name", "s_acctbal"
 
 ==========================
@@ -113,7 +113,7 @@ GROUP BY "s_name", "s_acctbal"
 
 SELECT "s_name", count("s_name")
 FROM "supplier"
-WHERE ("s_suppkey" < %.2f OR "s_suppkey" > %.2f) OR "s_acctbal" < %.2f
+WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) OR "s_acctbal" < %.2f
 GROUP BY "s_name"
 
 ==========================
@@ -121,7 +121,7 @@ GROUP BY "s_name"
 
 SELECT "ps_suppkey", AVG("ps_availqty")
 FROM "partsupp"
-WHERE ("ps_availqty" < %.2f AND "ps_partkey" < %.2f) OR ("ps_availqty" > %.2f AND "ps_partkey" > %.2f)
+WHERE ("ps_availqty" < %d AND "ps_partkey" < %d) OR ("ps_availqty" > %d AND "ps_partkey" > %d)
 GROUP BY "ps_suppkey"
 
 ==========================
@@ -129,7 +129,7 @@ GROUP BY "ps_suppkey"
 
 SELECT "c_name", SUM("c_acctbal")
 FROM "customer"
-WHERE "c_acctbal" < %.2f AND ("c_custkey" < %.2f OR "c_custkey" > %.2f) OR "c_acctbal" < %.2f
+WHERE "c_acctbal" < %.2f AND ("c_custkey" < %d OR "c_custkey" > %d) OR "c_acctbal" < %.2f
 group by "c_name"
 
 ==========================
@@ -139,7 +139,7 @@ group by "c_name"
 
 SELECT "n_nationkey", sum("s_acctbal")
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
-WHERE ("s_suppkey" < %.2f OR "s_suppkey" > %.2f) AND "s_acctbal" < %.2f
+WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) AND "s_acctbal" < %.2f
 GROUP BY "n_nationkey"
 
 ==========================
@@ -147,7 +147,7 @@ GROUP BY "n_nationkey"
 
 SELECT "n_nationkey", sum("s_acctbal")
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
-WHERE ("s_suppkey" < %.2f AND "s_suppkey" > %.2f) OR "s_acctbal" < %.2f
+WHERE ("s_suppkey" < %d AND "s_suppkey" > %d) OR "s_acctbal" < %.2f
 GROUP BY "n_nationkey"
 
 ==========================
@@ -155,7 +155,7 @@ GROUP BY "n_nationkey"
 
 SELECT "l_linenumber", "l_quantity", avg("ps_supplycost"), avg("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" < %.2f AND "ps_availqty" < %.2f AND "ps_supplycost" < %.2f
+WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 GROUP BY "l_linenumber", "l_quantity"
 
 ==========================
@@ -163,7 +163,7 @@ GROUP BY "l_linenumber", "l_quantity"
 
 SELECT "l_linenumber", count("l_quantity"), sum("ps_availqty"), avg("ps_supplycost"), max("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" > %.2f AND "ps_availqty" > %.2f AND "ps_supplycost" > %.2f
+WHERE "ps_partkey" > %d AND "ps_availqty" > %d AND "ps_supplycost" > %.2f
 GROUP BY "l_linenumber"
 
 ==========================
@@ -187,7 +187,7 @@ GROUP BY "c_name"
 
 SELECT "s_suppkey", "ps_partkey", avg("ps_supplycost"), sum("ps_availqty"), avg("s_acctbal")
 FROM "partsupp" JOIN "supplier" on "ps_suppkey" = "s_suppkey"
-WHERE "ps_availqty" > %.2f AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
+WHERE "ps_availqty" > %d AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 GROUP BY "s_suppkey", "ps_partkey"
 
 ==========================
@@ -195,7 +195,7 @@ GROUP BY "s_suppkey", "ps_partkey"
 % Simple filter queries
 % 25
 
-SELECT "p_partkey", "p_mfgr", "p_type", "p_size" from "part" where "p_size" between %.2f and %.2f
+SELECT "p_partkey", "p_mfgr", "p_type", "p_size" from "part" where "p_size" between %d and %d
 
 ==========================
 % 26
@@ -205,7 +205,7 @@ SELECT "s_name", "s_acctbal" from "supplier" where "s_acctbal" between %.2f and 
 ==========================
 % 27
 
-SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > %.2f and "ps_availqty" < %.2f
+SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > %d and "ps_availqty" < %d
 
 ==========================
 % 28
@@ -215,12 +215,12 @@ SELECT "c_custkey", "c_name", "c_acctbal" from "customer" where "c_acctbal" betw
 ==========================
 % 29
 
-SELECT "n_name", "n_regionkey" from "nation" where "n_nationkey" < %.2f
+SELECT "n_name", "n_regionkey" from "nation" where "n_nationkey" < %d
 
 ==========================
 % 30
 
-SELECT "l_discount", "l_tax", "l_extendedprice", "l_quantity" from "lineitem" where "l_quantity" < %.2f OR "l_tax" < %.2f
+SELECT "l_discount", "l_tax", "l_extendedprice", "l_quantity" from "lineitem" where "l_quantity" < %d OR "l_tax" < %.2f
 
 ==========================
 % 31

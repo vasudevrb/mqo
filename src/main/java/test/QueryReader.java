@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 
 public class QueryReader {
 
-    private static final String filePath = "resources/query_templates.txt";
-    private static final String metadataPath = "resources/query_template_md.txt";
+    private static final String filePath = "resources/der/70/query_templates.txt";
+    private static final String metadataPath = "resources/der/70/query_template_md.txt";
 
     private static List<String> readQueries() throws IOException {
         List<String> queries = new ArrayList<>();
@@ -40,20 +40,28 @@ public class QueryReader {
         return queries;
     }
 
-    private static List<List<List<Double>>> readQueryMetadata() throws IOException {
-        List<List<List<Double>>> metadata = new ArrayList<>();
+    private static List<List<List<String>>> readQueryMetadata() throws IOException {
+        List<List<List<String>>> metadata = new ArrayList<>();
 
         List<String> lines = FileUtils.readLines(new File(metadataPath), Charset.defaultCharset());
 
         lines.stream()
                 .forEach(line -> {
-                    List<List<Double>> lineList = new ArrayList<>();
+                    List<List<String>> lineList = new ArrayList<>();
                     String[] minMaxSet = StringUtils.substringsBetween(line, "[", "]");
                     for (String mnMx : minMaxSet) {
                         String[] seps = StringUtils.splitByWholeSeparator(mnMx, " ");
-                        double mn = Double.parseDouble(seps[0]);
-                        double mx = Double.parseDouble(seps[1]);
-                        lineList.add(List.of(mn, mx));
+//                        if (Utils.isFloat(seps[0])) {
+//                            double mn = Double.parseDouble(seps[0]);
+//                            double mx = Double.parseDouble(seps[1]);
+//                            lineList.add(List.of(mn, mx));
+//                        } else {
+//                            int mn = Integer.parseInt(seps[0]);
+//                            int mx = Integer.parseInt(seps[1]);
+//                            lineList.add(List.of(mn, mx));
+//                        }
+                        lineList.add(List.of(seps[0], seps[1]));
+
                     }
                     metadata.add(lineList);
                 });
@@ -64,7 +72,7 @@ public class QueryReader {
     // Scale is in the order of 32. So a scale of 10 would mean 320 queries
     public static List<String> getQueries(int scale) throws IOException {
         List<String> queryTemplates = readQueries();
-        List<List<List<Double>>> md = readQueryMetadata();
+        List<List<List<String>>> md = readQueryMetadata();
 
         List<String> queries = new ArrayList<>();
 
@@ -76,8 +84,24 @@ public class QueryReader {
                     continue;
                 }
 
-                Double[] values = md.get(i).stream().map(Utils::getQueryOperandBetween).toArray(Double[]::new);
-                queries.add(String.format(template, (Object[]) values));
+                List<Integer> argInds =Utils.getAllTemplateArgInds(template);
+                List<Object> vals = new ArrayList<>();
+
+                for (int z=0; z< argInds.size(); z++) {
+                    int argIndex = argInds.get(z);
+                    List<String> v = md.get(i).get(z);
+                    if (template.startsWith("%d", argIndex)) {
+                        int mn = Integer.parseInt(v.get(0));
+                        int mx = Integer.parseInt(v.get(1));
+                        vals.add(Utils.getQueryOperandBetween(mn, mx));
+                    } else {
+                        double mn = Double.parseDouble(v.get(0));
+                        double mx = Double.parseDouble(v.get(1));
+                        vals.add(Utils.getQueryOperandBetween(mn, mx));
+                    }
+                }
+
+                queries.add(String.format(template, vals.toArray()));
             }
         }
 
