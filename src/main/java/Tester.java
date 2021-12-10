@@ -135,6 +135,16 @@ public class Tester {
         MViewOptimizer op = new MViewOptimizer(config);
         QueryExecutor executor = new QueryExecutor(config);
 
+        //with der file: 43
+
+        //25%: r.nextInt(7) == 1
+        //20%: r.nextInt(10) == 1
+        //12%: r.nextInt(20) == 1
+        //9.5%: r.nextInt(30) == 1
+        //5%: r.nextInt(50) == 1
+        //0%: false
+        Random r = new Random(141221);
+
         List<RelOptMaterialization> materializations = new ArrayList<>();
         int numDerivable = 0;
         outerloop:
