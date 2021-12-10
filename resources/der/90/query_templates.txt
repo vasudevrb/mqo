@@ -147,7 +147,7 @@ GROUP BY "n_nationkey"
 
 SELECT "n_nationkey", sum("s_acctbal")
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
-WHERE "s_suppkey" < %.2f AND "s_acctbal" < %.2f
+WHERE "s_suppkey" < %.2f OR "s_acctbal" < %.2f
 GROUP BY "n_nationkey"
 
 ==========================
