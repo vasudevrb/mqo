@@ -8,10 +8,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -104,8 +101,34 @@ public class Utils {
         System.out.println(isFloat("3.4134"));
     }
 
-    public static double getQueryOperandBetween(List<Double> mnmx) {
-        return queryGenRng.nextDouble(mnmx.get(0), mnmx.get(1));
+    public static double getQueryOperandBetween(List<Object> mnmx) {
+        if (mnmx.get(0) instanceof Double) {
+            double min = (double) mnmx.get(0);
+            double max = (double) mnmx.get(1);
+            return queryGenRng.nextDouble(min, max);
+        } else {
+            int min = (int) mnmx.get(0);
+            int max = (int) mnmx.get(1);
+            return queryGenRng.nextInt(min, max);
+        }
+    }
+
+    public static int getQueryOperandBetween(int min, int max) {
+        return queryGenRng.nextInt(min, max);
+    }
+
+    public static double getQueryOperandBetween(double min, double max) {
+        return queryGenRng.nextDouble(min, max);
+    }
+
+    public static List<Integer> getAllTemplateArgInds(String template) {
+        List<Integer> out = new ArrayList<>();
+        int index = template.indexOf("%");
+        while(index >= 0) {
+            out.add(index);
+            index = template.indexOf("%", index+1);
+        }
+        return out;
     }
 
     public static <T> void shuffle(List<T> list) {
