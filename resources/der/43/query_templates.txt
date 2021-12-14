@@ -2,20 +2,6 @@
 ==========================
 
 % Complex filter queries
-% 1
-
-SELECT "l_quantity", "l_extendedprice", "l_shipdate", "l_tax", "l_discount"
-FROM "lineitem"
-WHERE "l_discount" > %.2f AND "l_quantity" > %d AND "l_tax" < %.2f
-
-==========================
-% 2
-
-SELECT "o_orderkey", "o_orderdate", "o_orderstatus", "o_totalprice"
-FROM "orders"
-WHERE ("o_orderkey" > %d AND "o_orderkey" < %d) OR "o_custkey" < %d
-
-==========================
 % 3
 
 SELECT "s_name", "s_suppkey", "s_acctbal"
@@ -75,6 +61,20 @@ WHERE "ps_availqty" > %d AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 
 ==========================
 
+% 1
+
+SELECT "l_quantity", "l_extendedprice", "l_shipdate", "l_tax", "l_discount"
+FROM "lineitem"
+WHERE "l_discount" > %.2f AND "l_quantity" > %d AND "l_tax" < %.2f
+
+==========================
+% 2
+
+SELECT "o_orderkey", "o_orderdate", "o_orderstatus", "o_totalprice"
+FROM "orders"
+WHERE ("o_orderkey" > %d AND "o_orderkey" < %d) OR "o_custkey" < %d
+
+==========================
 
 % Filter-Aggregate queries
 % 19
