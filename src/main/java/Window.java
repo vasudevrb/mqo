@@ -13,12 +13,10 @@ import org.apache.commons.io.FileUtils;
 import test.QueryProvider;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static common.Logger.logFinalTime;
-import static common.Logger.logTime;
+import static common.Logger.*;
 import static common.Utils.humanReadable;
 
 public class Window {
@@ -40,28 +38,31 @@ public class Window {
         this.batcher = new QueryBatcher(configuration, executor);
         this.optimizer = new MViewOptimizer(configuration);
 
-//        this.cache = new Cache<>(new LRUPolicy<>(), Dimension.COUNT(30));
         this.cache = new Cache<>(policy, Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
     }
 
     public void run() {
-        AtomicInteger count = new AtomicInteger();
+        //[0] is the cardinal count, [1] is the number of queries
+        int[] count = new int[2];
+
         final long t1 = System.currentTimeMillis();
         provider.listen(qs -> {
             System.out.println("===============================================");
-            System.out.println(count.get() + "\n" + Utils.getPrintableSql(qs.get(0)));
+            System.out.printf("%d: (%d)\nNo. of queries: %d\n", count[0], count[1], qs.size());
 
-            if (count.get() % 32 == 0) {
+            if (count[0] % 32 == 0) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
-                logFinalTime("Completed executing " + count.get() +" queries in " + time + "ms");
+                logFinalTime("Completed executing " + count[0] + " queries in " + time + "ms");
                 System.out.println();
             }
 
-            count.getAndIncrement();
+            count[0] += 1;
+            count[1] += qs.size();
+
 //            runSequentially(qs);
             handle(qs);
-            if (count.get() > 32) {
+            if (count[1] > 640) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
                 logTime("Stopping... Time: " + time + " ms");
@@ -94,6 +95,10 @@ public class Window {
             }
         }
         return null;
+    }
+
+    private RelNode getSubstitution(RelOptMaterialization materialization, RelNode logicalPlan) {
+        return optimizer.substitute(materialization, logicalPlan);
     }
 
     private void runIndividualQuery(String q) {
@@ -136,28 +141,38 @@ public class Window {
         // If yes, then it means that the batch query parts can also use that same MV
         // Find substitutions and execute
         for (BatchedQuery bq : batched) {
+            System.out.println();
             System.out.println("Batched SQL: " + Utils.getPrintableSql(bq.sql));
+            System.out.println();
             RelNode plan = executor.getLogicalPlan(bq.sql);
             RelNode substitutable = getSubstitution(plan);
+            RelOptMaterialization materialization = null;
             if (substitutable == null) {
-                RelOptMaterialization materialization = optimizer.materialize(bq.sql, plan);
+                materialization = optimizer.materialize(bq.sql, plan);
 
                 long t1 = System.currentTimeMillis();
                 long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
                         ? QueryUtils.getTableSize(bq.sql, materialization, executor)
                         : 1;
                 subtractable += (System.currentTimeMillis() - t1);
+                logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + humanReadable(value));
 
                 cache.add(materialization, value);
             }
 
             for (SqlNode partQuery : bq.parts) {
-                RelNode partSubstitutable = getSubstitution(executor.getLogicalPlan(partQuery));
+                RelNode partSubstitutable = materialization != null
+                        ? getSubstitution(materialization, executor.getLogicalPlan(partQuery))
+                        : getSubstitution(executor.getLogicalPlan(partQuery));
+
                 if (partSubstitutable == null) {
-                    System.out.println("This shouldn't happen!!!!!! Batch query is substitutable but parts are not");
+                    logError("This shouldn't happen!!!!!! Batch query is substitutable but parts are not");
+                    System.out.println(partQuery.toString());
+                    System.out.println();
                     return;
                 }
                 executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
+                System.out.println();
             }
         }
     }

@@ -16,4 +16,10 @@ public class Logger {
     public static void logFinalTime(String log) {
         System.out.println(colorize(log, WHITE_TEXT(), BLUE_BACK()));
     }
+
+    public static void logError(String log) {
+        System.out.println(colorize("                                                                                  ", BLACK_TEXT(), RED_BACK()));
+        System.out.println(colorize(log, BLACK_TEXT(), RED_BACK()));
+        System.out.println(colorize("                                                                                  ", BLACK_TEXT(), RED_BACK()));
+    }
 }
