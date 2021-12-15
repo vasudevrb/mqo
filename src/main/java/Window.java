@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static common.Logger.logFinalTime;
 import static common.Logger.logTime;
 import static common.Utils.humanReadable;
 
@@ -49,10 +50,18 @@ public class Window {
         provider.listen(qs -> {
             System.out.println("===============================================");
             System.out.println(count.get() + "\n" + Utils.getPrintableSql(qs.get(0)));
+
+            if (count.get() % 32 == 0) {
+                long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
+                System.out.println();
+                logFinalTime("Completed executing " + count.get() +" queries in " + time + "ms");
+                System.out.println();
+            }
+
             count.getAndIncrement();
-            runSequentially(qs);
-//            handle(qs);
-            if (count.get() == 32) {
+//            runSequentially(qs);
+            handle(qs);
+            if (count.get() > 32) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
                 logTime("Stopping... Time: " + time + " ms");
