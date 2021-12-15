@@ -20,9 +20,9 @@ public class CustomPlanner extends VolcanoPlanner {
     @Override
     public @Nullable RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
         if (rel instanceof EnumerableRel) {
-            long t1 = System.currentTimeMillis();
+//            long t1 = System.currentTimeMillis();
             RelOptCost cost = super.getCost(rel, mq);
-            diff += (System.currentTimeMillis() - t1);
+//            diff += (System.currentTimeMillis() - t1);
             return cost;
         }
 
