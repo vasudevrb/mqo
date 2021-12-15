@@ -13,7 +13,7 @@ import static common.Utils.humanReadable;
 
 public class Cache<T> {
 
-    public static final List<Integer> SIZES_MB = List.of(10, 20, 50, 100, 200, 500, 1024, 2048, 3072, 4096);
+    public static final List<Integer> SIZES_MB = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
 
     private final List<CacheItem<T>> items;
     private final Dimension dimension;
