@@ -106,7 +106,7 @@ public class Tester {
 
     public void printQuerySizes() throws IOException {
         List<Long> sizes = new ArrayList<>();
-        List<String> queries = QueryReader.getQueries(20);
+        List<String> queries = QueryReader.getQueries(20).stream().flatMap(Collection::stream).toList();
         for (int i = 0; i < queries.size(); i++) {
             System.out.println("============================================");
             System.out.println("Executing " + i);
@@ -130,7 +130,7 @@ public class Tester {
 
     public void testFindDerivablePercentage() throws IOException {
         boolean deAgg = true;
-        List<String> queries = QueryReader.getQueries(20);
+        List<String> queries = QueryReader.getQueries(20).stream().flatMap(Collection::stream).toList();
 
         MViewOptimizer op = new MViewOptimizer(config);
         QueryExecutor executor = new QueryExecutor(config);

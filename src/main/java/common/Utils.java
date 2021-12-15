@@ -15,11 +15,13 @@ public class Utils {
 
     private static final String AB = "BCEFGHIJKLMPQSTUVWXYZbcefghijklmpqstuvwxyz";
     private static final long QUERY_GEN_SEED = 152634546543L;
+    private static final long SHOULD_BATCH_SEED = 78654346543L;
     private static final long seed = 14124987135L;
 
     private static final Random rnd = new Random(seed);
     private static final Random rnd2 = new Random();
     private static final Random queryGenRng = new Random(QUERY_GEN_SEED);
+    private static final Random shouldBatchRng = new Random(SHOULD_BATCH_SEED);
 
     public static String getPrintableSql(String sql) {
         return sql.replace(" FROM ", "\nFROM ")
@@ -78,6 +80,10 @@ public class Utils {
         return c >= '0' && c <= '9';
     }
 
+    public static boolean shouldBatch() {
+        return shouldBatchRng.nextBoolean();
+    }
+
     public static String randomString(int len) {
         StringBuilder sb = new StringBuilder(len);
         for (int i = 0; i < len; i++)
@@ -124,9 +130,9 @@ public class Utils {
     public static List<Integer> getAllTemplateArgInds(String template) {
         List<Integer> out = new ArrayList<>();
         int index = template.indexOf("%");
-        while(index >= 0) {
+        while (index >= 0) {
             out.add(index);
-            index = template.indexOf("%", index+1);
+            index = template.indexOf("%", index + 1);
         }
         return out;
     }
@@ -162,5 +168,31 @@ public class Utils {
         } catch (Exception ex) {
             System.out.println("Exception : " + ex);
         }
+    }
+
+    public static List<Integer> getBatchCandidateIndexes(List<String> queries, int i, List<List<Integer>> batchMd) {
+        List<Integer> allPossibleBatches = batchMd.stream().filter(bi -> bi.contains(i)).toList().get(0);
+        allPossibleBatches.remove((Integer) i);
+
+        if (allPossibleBatches.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        int numQueriesInBatch = Math.min(5, shouldBatchRng.nextInt(allPossibleBatches.size()));
+        List<Integer> candidateBatchIndexes = new ArrayList<>();
+
+        for (int z = 0; z < numQueriesInBatch; z++) {
+            int bcIndex = allPossibleBatches.get(shouldBatchRng.nextInt(allPossibleBatches.size()));
+            candidateBatchIndexes.add(bcIndex);
+            allPossibleBatches.remove((Integer) bcIndex);
+        }
+
+        for (int k = candidateBatchIndexes.size() - 1; k >= 0; k--) {
+            int bcIndex = candidateBatchIndexes.get(k);
+            if (bcIndex > queries.size()) {
+                candidateBatchIndexes.remove(k);
+            }
+        }
+        return candidateBatchIndexes;
     }
 }

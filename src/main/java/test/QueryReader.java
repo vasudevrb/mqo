@@ -15,7 +15,8 @@ import java.util.stream.Collectors;
 public class QueryReader {
 
     private static final String filePath = "resources/der/70/query_templates.txt";
-    private static final String metadataPath = "resources/der/70/query_template_md.txt";
+    private static final String queryMetadataPath = "resources/der/70/query_template_md.txt";
+    private static final String batchMetadataPath = "resources/batchables.txt";
 
     private static List<String> readQueries() throws IOException {
         List<String> queries = new ArrayList<>();
@@ -43,7 +44,7 @@ public class QueryReader {
     private static List<List<List<String>>> readQueryMetadata() throws IOException {
         List<List<List<String>>> metadata = new ArrayList<>();
 
-        List<String> lines = FileUtils.readLines(new File(metadataPath), Charset.defaultCharset());
+        List<String> lines = FileUtils.readLines(new File(queryMetadataPath), Charset.defaultCharset());
 
         lines.stream()
                 .forEach(line -> {
@@ -51,15 +52,6 @@ public class QueryReader {
                     String[] minMaxSet = StringUtils.substringsBetween(line, "[", "]");
                     for (String mnMx : minMaxSet) {
                         String[] seps = StringUtils.splitByWholeSeparator(mnMx, " ");
-//                        if (Utils.isFloat(seps[0])) {
-//                            double mn = Double.parseDouble(seps[0]);
-//                            double mx = Double.parseDouble(seps[1]);
-//                            lineList.add(List.of(mn, mx));
-//                        } else {
-//                            int mn = Integer.parseInt(seps[0]);
-//                            int mx = Integer.parseInt(seps[1]);
-//                            lineList.add(List.of(mn, mx));
-//                        }
                         lineList.add(List.of(seps[0], seps[1]));
 
                     }
@@ -69,8 +61,31 @@ public class QueryReader {
         return metadata;
     }
 
+    private static List<List<Integer>> readBatchMetadata(int scale) throws IOException {
+        List<List<Integer>> batchMd = new ArrayList<>();
+
+        FileUtils.readLines(new File(batchMetadataPath), Charset.defaultCharset())
+                .stream()
+                .filter(line -> !line.startsWith("%") && !line.isEmpty())
+                .forEach(line -> {
+                    List<Integer> ints = new ArrayList<>();
+                    String[] seps = StringUtils.splitByWholeSeparator(line, ",");
+                    for (String sep : seps) {
+                        int x = Integer.parseInt(sep.trim());
+                        ints.add(x);
+                        while (x + 32 < (32 * scale)) {
+                            x += 32;
+                            ints.add(x);
+                        }
+                    }
+                    batchMd.add(ints);
+                });
+
+        return batchMd;
+    }
+
     // Scale is in the order of 32. So a scale of 10 would mean 320 queries
-    public static List<String> getQueries(int scale) throws IOException {
+    public static List<List<String>> getQueries(int scale) throws IOException {
         List<String> queryTemplates = readQueries();
         List<List<List<String>>> md = readQueryMetadata();
 
@@ -84,10 +99,10 @@ public class QueryReader {
                     continue;
                 }
 
-                List<Integer> argInds =Utils.getAllTemplateArgInds(template);
+                List<Integer> argInds = Utils.getAllTemplateArgInds(template);
                 List<Object> vals = new ArrayList<>();
 
-                for (int z=0; z< argInds.size(); z++) {
+                for (int z = 0; z < argInds.size(); z++) {
                     int argIndex = argInds.get(z);
                     List<String> v = md.get(i).get(z);
                     if (template.startsWith("%d", argIndex)) {
@@ -105,10 +120,48 @@ public class QueryReader {
             }
         }
 
-        return queries;
+        return batch(queries, scale);
     }
 
-    public static List<String> getQueries() throws IOException {
+    private static List<List<String>> batch(List<String> queries, int scale) throws IOException {
+        List<List<Integer>> batchMd = readBatchMetadata(scale);
+
+        List<List<String>> batchedQueries = new ArrayList<>();
+        List<Integer> alreadyBatched = new ArrayList<>();
+
+        for (int i = 0; i < queries.size(); i++) {
+            if (alreadyBatched.contains(i)) {
+                continue;
+            }
+
+            String query = queries.get(i);
+
+            if (Utils.shouldBatch()) {
+                List<Integer> batchCandidateIndexes = Utils.getBatchCandidateIndexes(queries, i, batchMd);
+                batchCandidateIndexes = batchCandidateIndexes.stream().filter(bc -> !alreadyBatched.contains(bc)).toList();
+
+                alreadyBatched.add(i);
+                alreadyBatched.addAll(batchCandidateIndexes);
+
+                List<String> batchedList = new ArrayList<>();
+                batchedList.add(query);
+                batchCandidateIndexes.forEach(bc -> batchedList.add(queries.get(bc)));
+
+                batchedQueries.add(batchedList);
+            } else {
+                batchedQueries.add(List.of(query));
+                alreadyBatched.add(i);
+            }
+        }
+        return batchedQueries;
+    }
+
+    public static List<List<String>> getQueries() throws IOException {
         return getQueries(10);
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<List<String>> q = getQueries(20);
+        System.out.println("A");
     }
 }

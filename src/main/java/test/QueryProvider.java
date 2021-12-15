@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 
 public class QueryProvider {
 
-    public List<String> queries;
+    public List<List<String>> queries;
 
     private Thread providerThread;
 
@@ -61,11 +61,7 @@ public class QueryProvider {
             while (true) {
                 try {
                     Thread.sleep(Utils.getRandomNumber(2 * 1000));
-//                    List<String> query = i == 0
-//                            ? queryProvider.getBatch(0)
-//                            : List.of(queryProvider.getBatch(0).get(i % 3));
-                    //TODO: Send list of queries sometimes
-                    List<String> query = List.of(queryProvider.queries.get(i));
+                    List<String> query = queryProvider.queries.get(i);
                     queue.put(query);
                     i++;
                     i %= queryProvider.queries.size();

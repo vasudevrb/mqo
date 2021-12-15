@@ -1,0 +1,35 @@
+% supplier
+0, 13, 14, 25
+
+% partsupp
+1, 15, 26
+
+% customer
+2, 16, 27
+
+% supplier, nation
+3, 17, 18
+
+% lineitem, partsupp
+4, 19, 20
+
+% nation, supplier
+5, 21
+
+% orders, customer
+6, 22
+
+% partsupp, supplier
+7, 23
+
+% lineitem
+8, 10, 11, 29, 30
+
+% orders
+9, 12, 31
+
+% part
+24
+
+% nation
+28
