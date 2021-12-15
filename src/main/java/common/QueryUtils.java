@@ -143,6 +143,15 @@ public class QueryUtils {
         return (long) (rowCount * (avgRowSize != null ? avgRowSize : 1));
     }
 
+    public static long getTableSize2(String query, RelOptMaterialization materialization, QueryExecutor executor) {
+        RelNode table = materialization.tableRel;
+        RelMetadataQuery mq = table.getCluster().getMetadataQuery();
+        Double avgRowSize = mq.getAverageRowSize(table);
+
+        long rowCount = (long) mq.getCumulativeCost(table).getRows();
+        return (long) (rowCount * (avgRowSize != null ? avgRowSize : 1));
+    }
+
     public static RelOptCost getCost(RelNode node) {
         RelOptCluster cluster = node.getCluster();
         return cluster.getMetadataQuery().getCumulativeCost(node);
