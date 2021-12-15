@@ -14,6 +14,7 @@ public class LRUPolicy<T> implements ReplacementPolicy<T> {
     public long clean(List<CacheItem<T>> cacheItems, long currentSize, Dimension dimension, float proportion) {
         int newSize = (int) (dimension.getValue() * proportion);
         logCache("Cache clean called when cache size is " + currentSize + ", num items: " + cacheItems.size());
+//        System.exit(0);
 
         while (currentSize > newSize) {
             int minIdx = IntStream.range(0, cacheItems.size())
