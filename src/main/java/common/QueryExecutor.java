@@ -133,8 +133,10 @@ public class QueryExecutor {
 
         System.out.println("Executed query. Compile: " + (t2 - t1) / 1000000 + " ms, Execute: " + (t4 - t3) / 1000000 + " ms");
 
-        if (consumer != null) consumer.accept(run.getResultSet());
+        ResultSet rs = run.getResultSet();
+        if (consumer != null) consumer.accept(rs);
         run.close();
+        rs.close();
     }
 
     private boolean hasBetween(SqlNode node) {
