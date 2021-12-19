@@ -161,7 +161,7 @@ GROUP BY "l_linenumber", "l_quantity"
 ==========================
 % 21
 
-SELECT "l_linenumber", count("l_quantity"), sum("ps_availqty"), avg("ps_supplycost"), max("l_discount")
+SELECT "l_linenumber", count("l_quantity"), avg("ps_supplycost"), max("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" > %d AND "ps_availqty" > %d AND "ps_supplycost" > %.2f
 GROUP BY "l_linenumber"
@@ -220,12 +220,12 @@ SELECT "n_name", "n_regionkey" from "nation" where "n_nationkey" < %d
 ==========================
 % 30
 
-SELECT "l_discount", "l_tax", "l_extendedprice", "l_quantity" from "lineitem" where "l_quantity" < %d AND "l_tax" < %.2f
+SELECT "l_tax", "l_quantity" from "lineitem" where "l_quantity" < %d AND "l_tax" < %.2f
 
 ==========================
 % 31
 
-SELECT "l_quantity", "l_extendedprice", "l_discount", "l_tax" from "lineitem" where "l_tax" < %.2f
+SELECT "l_quantity", "l_tax" from "lineitem" where "l_tax" < %.2f
 
 ==========================
 % 32
