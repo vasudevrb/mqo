@@ -139,7 +139,7 @@ public class Window {
         List<BatchedQuery> batched = batcher.batch(queries);
 
         System.out.println("Batching queries:");
-        for (String query: queries) {
+        for (String query : queries) {
             System.out.println(Utils.getPrintableSql(query) + "\n");
         }
 
