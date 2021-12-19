@@ -5,7 +5,6 @@ import cache.policy.ReplacementPolicy;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static common.Logger.logCache;
 import static common.Logger.logTime;
@@ -51,12 +50,8 @@ public class Cache<T> {
     }
 
     public void clean() {
-        CompletableFuture.runAsync(() -> {
-            synchronized (items) {
-                currentCacheSize = policy.clean(items, currentCacheSize, dimension);
-                logCache("After clean: current size is " + formatCacheSize() + ", length: " + items.size());
-            }
-        });
+        currentCacheSize = policy.clean(items, currentCacheSize, dimension);
+        logCache("After clean: current size is " + formatCacheSize() + ", length: " + items.size());
     }
 
     private String formatCacheSize() {
