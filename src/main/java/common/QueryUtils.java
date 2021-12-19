@@ -103,8 +103,11 @@ public class QueryUtils {
 
     public static String recreateQuery(SqlNode node, Collection<String> selects, String newWhere, Collection<String> groupBys) {
         String q = "SELECT " + String.join(",", selects) +
-                " FROM " + getFromString(node) +
-                " WHERE " + newWhere;
+                " FROM " + getFromString(node);
+
+        if (!newWhere.isEmpty() && !newWhere.equals("()")) {
+            q += " WHERE " + newWhere;
+        }
 
         if (!groupBys.isEmpty()) {
             q += " GROUP BY " + String.join(",", groupBys);
