@@ -120,18 +120,22 @@ public class QueryExecutor {
     }
 
     private void _execute(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
+        long t1 = System.currentTimeMillis();
         RelNode physicalNode = getPhysicalPlan(relNode);
+        long physicalTime = System.currentTimeMillis() - t1;
 
+        connection.setAutoCommit(false);
         RelRunner runner = connection.unwrap(RelRunner.class);
-        long t1 = System.nanoTime();
+        t1 = System.currentTimeMillis();
         PreparedStatement run = runner.prepareStatement(physicalNode);
-        long t2 = System.nanoTime();
+        run.setFetchSize(10000);
+        long compileTime = System.currentTimeMillis() - t1;
 
-        long t3 = System.nanoTime();
+        t1 = System.currentTimeMillis();
         run.execute();
-        long t4 = System.nanoTime();
+        long execTime = System.currentTimeMillis() - t1;
 
-        System.out.println("Executed query. Compile: " + (t2 - t1) / 1000000 + " ms, Execute: " + (t4 - t3) / 1000000 + " ms");
+        System.out.printf("\nPlan: %dms, Compile: %dms, Exec: %dms\n", physicalTime, compileTime, execTime);
 
         ResultSet rs = run.getResultSet();
         if (consumer != null) consumer.accept(rs);
