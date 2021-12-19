@@ -7,6 +7,7 @@ import common.Utils;
 import mv.MViewOptimizer;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import test.QueryReader;
@@ -175,6 +176,73 @@ public class Tester {
         }
         System.out.println();
         System.out.println("Number of derivable: " + numDerivable + ", " + (((double) numDerivable) * 100 / queries.size()) + "%");
+    }
+
+    public void testDerivabilityMaps() throws IOException {
+        List<String> queries = QueryReader.getQueries(10).stream().flatMap(Collection::stream).toList();
+
+        HashMap<String, List<Integer>> map = new HashMap<>();
+        List<RelOptMaterialization> mats = new ArrayList<>();
+
+        for (String query : queries) {
+            SqlNode validated = executor.validate(query);
+            RelNode logical = executor.getLogicalPlan(validated);
+
+            System.out.printf("Adding query %d/%d", queries.indexOf(query), queries.size());
+            System.out.println();
+            mats.add(optimizer.materialize(query, logical));
+
+            String key = String.join(",", QueryUtils.from(validated));
+            int index = mats.size() - 1;
+
+            if (map.containsKey(key)) {
+                map.get(key).add(index);
+            } else {
+                var items = new ArrayList<Integer>();
+                items.add(index);
+
+                map.put(key, items);
+            }
+        }
+
+        System.out.println("Added all materialized views");
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+
+        //Without any maps
+
+        for (int k=0; k < 100; k++) {
+            ql:
+            for (int i = queries.size() - 1; i >= 0; i--) {
+                long t1 = System.currentTimeMillis();
+                String query = queries.get(i);
+                RelNode logical = executor.getLogicalPlan(query);
+                for (RelOptMaterialization m : mats) {
+                    if (optimizer.substitute(m, logical) != null) {
+                        stats.addValue(System.currentTimeMillis() - t1);
+                        continue ql;
+                    }
+                }
+            }
+        }
+
+        System.out.println(stats);
+        stats.clear();
+
+        for (int k=0; k < 100; k++) {
+            for (int i = queries.size() - 1; i >= 0; i--) {
+                //With hashmap
+                long t1 = System.currentTimeMillis();
+                SqlNode validated = executor.validate(queries.get(i));
+                RelNode logical = executor.getLogicalPlan(validated);
+                List<Integer> possible = map.get(String.join(",", QueryUtils.from(validated)));
+                if (possible != null && !possible.isEmpty()) {
+                    optimizer.substitute(mats.get(possible.get(0)), logical);
+                    stats.addValue(System.currentTimeMillis() - t1);
+                }
+            }
+        }
+
+        System.out.println(stats);
     }
 
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
