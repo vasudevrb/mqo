@@ -129,7 +129,7 @@ public class Window {
             cache.add(materialization, value);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from
             //TODO: materialized table
-            executor.execute(logicalPlan, rs -> System.out.println("Executed " + q.replace("\n", " ")));
+            executor.execute(getSubstitution(materialization, logicalPlan), rs -> System.out.println("Executed " + q.replace("\n", " ")));
         } else {
             executor.execute(substituted, rs -> System.out.println("MVS Executed " + q.replace("\n", " ")));
         }
