@@ -50,6 +50,16 @@ public class Window {
             System.out.println("===============================================");
             System.out.printf("%d: (%d)\nNo. of queries: %d\n", count[0], count[1], qs.size());
 
+            System.out.println("~~~~~~~~~~~~~~~~~");
+            System.out.println("Heap: " + humanReadable(Runtime.getRuntime().totalMemory()));
+            System.out.println("~~~~~~~~~~~~~~~~~");
+
+//            if (QueryUtils.getFromString(executor.validate(qs.get(0))).contains("JOIN")) {
+//                count[0] += 1;
+//                count[1] += qs.size();
+//                return;
+//            }
+
             if (count[0] % 32 == 0) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
@@ -106,7 +116,8 @@ public class Window {
         RelNode substituted = getSubstitution(logicalPlan);
 
         if (substituted == null) {
-            RelOptMaterialization materialization = optimizer.materialize(q, logicalPlan);
+            System.out.println("Creating MV for \n " + Utils.getPrintableSql(q) + "\n");
+            RelOptMaterialization materialization = optimizer.materialize(q, executor.getLogicalPlan(q));
 
             long t1 = System.currentTimeMillis();
             long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
@@ -126,6 +137,11 @@ public class Window {
 
     private void runBatchQueries(List<String> queries) {
         List<BatchedQuery> batched = batcher.batch(queries);
+
+        System.out.println("Batching queries:");
+        for (String query: queries) {
+            System.out.println(Utils.getPrintableSql(query) + "\n");
+        }
 
         // Find out all the queries from the list that couldn't be batched and run them individually
         List<Integer> batchedIndexes = batched.stream().flatMap(bq -> bq.indexes.stream()).collect(Collectors.toList());
