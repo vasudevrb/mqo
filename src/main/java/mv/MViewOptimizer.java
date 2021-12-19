@@ -53,11 +53,11 @@ public class MViewOptimizer {
         RelBuilder builder = LOGICAL_BUILDER.create(cluster, catalogReader);
         builder.scan(schema.getName(), mViewName);
         LogicalTableScan logicalTableScan = (LogicalTableScan) builder.build();
-        CustomTableScan replacement = CustomTableScan.create(cluster, logicalTableScan.getTable());
+//        CustomTableScan replacement = CustomTableScan.create(cluster, logicalTableScan.getTable());
 
 
         //RelOptMaterialization records that this table represents this query. Required for substitution
-        RelOptMaterialization m = new RelOptMaterialization(replacement, node, null, List.of(schema.getName(), mViewName));
+        RelOptMaterialization m = new RelOptMaterialization(logicalTableScan, node, null, List.of(schema.getName(), mViewName));
 
         long t2 = System.currentTimeMillis();
         System.out.println("Materializing view took " + (t2 - t1) + " ms");
