@@ -233,6 +233,10 @@ public class QueryBatcher {
 
     //NOTE: Where must be of a single query. Combined will not work because of flatMap
     private List<String> getWherePredicateNames(SqlNode n) {
+        if (where(n).equals("")) {
+            return new ArrayList<>();
+        }
+
         Normaliser.WhereClause cnfQ1 = normaliser.getCNF(normaliser.getBooleanRepn(where(n)));
         String cnfString = cnfQ1.asString().replace("`", "\"");
         return extractPredicates(cnfString)
@@ -250,8 +254,15 @@ public class QueryBatcher {
     }
 
     public Operator build(SqlNode sqlNode1, SqlNode sqlNode2) {
-        String s1 = ((SqlSelect) sqlNode1).getWhere().toString();
-        String s2 = ((SqlSelect) sqlNode2).getWhere().toString();
+        SqlNode w1 = ((SqlSelect) sqlNode1).getWhere();
+        SqlNode w2 = ((SqlSelect) sqlNode2).getWhere();
+
+        if (w1 == null || w2 == null) {
+            return new Operator(AND);
+        }
+
+        String s1 = w1.toString();
+        String s2 = w2.toString();
 
         List<List<Predicate>> pr = extractPredicates(doOR(s1, s2));
         pr = clean(pr);
