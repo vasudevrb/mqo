@@ -43,7 +43,7 @@ public class QueryBatcher {
         this.evaluator = new Evaluator();
     }
 
-    public static <K, V> Map<V, K> inverseMap(Map<K, V> sourceMap) {
+    public <K, V> Map<V, K> inverseMap(Map<K, V> sourceMap) {
         return sourceMap.entrySet().stream().collect(
                 Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey,
                         (a, b) -> a) //if sourceMap has duplicate values, keep only first
@@ -101,7 +101,7 @@ public class QueryBatcher {
             k++;
         }
 
-        return batchedQueries.stream().filter(bq -> bq.indexes.size() > 1).collect(Collectors.toList());
+        return batchedQueries.stream().filter(bq -> bq.indexes.size() > 1).filter(bq -> bq.sql.length() < 4000).collect(Collectors.toList());
     }
 
     public void unbatchResults3(BatchedQuery bq, ResultSet rs) {
