@@ -33,16 +33,21 @@ public class Tester {
     }
 
     public void testMVSubstitution() throws Exception {
+        /*
+         SELECT "l_linenumber", "l_quantity", avg("ps_supplycost"), avg("l_discount")
+            FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
+            WHERE "ps_partkey" < 195757 AND "ps_availqty" < 4947 AND "ps_supplycost" < 8.66
+            GROUP BY "l_linenumber", "l_quantity"
+         */
         String mv = """
                 SELECT "o_totalprice", "o_orderkey", "o_custkey", "c_name", "c_acctbal"
                 FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
                 WHERE ("o_totalprice" < 89717.34 AND "c_acctbal" < 300)
                 """;
         String q = """
-                SELECT "c_name", sum("c_acctbal"), avg("o_totalprice")
+                SELECT "o_totalprice", "o_orderkey", "o_custkey", "c_name", "c_acctbal"
                 FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
-                WHERE ("o_totalprice" < 399.27 AND "c_acctbal" < 100) 
-                GROUP BY "c_name"
+                WHERE ("o_totalprice" < 89717.34 AND "c_acctbal" < 300)
                 """;
 
         //MV execution

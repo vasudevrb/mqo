@@ -95,6 +95,8 @@ public class Window {
         }
     }
 
+    //TODO: Use a hashmap to only look at materializations that are of the same table
+    //TODO: Move canonicalize outside the loop
     private RelNode getSubstitution(RelNode logicalPlan) {
         RelNode substituted;
         for (CacheItem<RelOptMaterialization> item : cache.getItems()) {
@@ -136,6 +138,8 @@ public class Window {
     }
 
     private void runBatchQueries(List<String> queries) {
+        //TODO: Check if any of these queries can be executed from MVs.
+        //No point in batching if that's the case.
         List<BatchedQuery> batched = batcher.batch(queries);
 
         System.out.println("Batching queries:");
