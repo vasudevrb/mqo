@@ -197,12 +197,26 @@ public class Utils {
     }
 
     private static int getNumQueriesInBatch(int i, List<Integer> allPossibleBatches) {
-//        int relativeIndex = i % 32;
-//        //Don't batch for lineitem join partsupp
-//        if (relativeIndex == 4 || relativeIndex == 19 || relativeIndex == 20) {
-//            return 0;
-//        }
+        int relativeIndex = i % 32;
+        //Don't batch for lineitem join partsupp
+        if (relativeIndex == 4 || relativeIndex == 19 || relativeIndex == 20) {
+            return 0;
+        }
 
-        return Math.min(5, shouldBatchRng.nextInt(allPossibleBatches.size()));
+//        return Math.min(5, shouldBatchRng.nextInt(allPossibleBatches.size()));
+        return Math.min(getPoisson(5), shouldBatchRng.nextInt(allPossibleBatches.size()));
+    }
+
+    private static int getPoisson(double lambda) {
+        double L = Math.exp(-lambda);
+        double p = 1.0;
+        int k = 0;
+
+        do {
+            k++;
+            p *= shouldBatchRng.nextDouble();
+        } while (p > L);
+
+        return k - 1;
     }
 }
