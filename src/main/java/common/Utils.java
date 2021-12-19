@@ -178,7 +178,7 @@ public class Utils {
             return new ArrayList<>();
         }
 
-        int numQueriesInBatch = Math.min(5, shouldBatchRng.nextInt(allPossibleBatches.size()));
+        int numQueriesInBatch = getNumQueriesInBatch(i, allPossibleBatches);
         List<Integer> candidateBatchIndexes = new ArrayList<>();
 
         for (int z = 0; z < numQueriesInBatch; z++) {
@@ -194,5 +194,15 @@ public class Utils {
             }
         }
         return candidateBatchIndexes;
+    }
+
+    private static int getNumQueriesInBatch(int i, List<Integer> allPossibleBatches) {
+//        int relativeIndex = i % 32;
+//        //Don't batch for lineitem join partsupp
+//        if (relativeIndex == 4 || relativeIndex == 19 || relativeIndex == 20) {
+//            return 0;
+//        }
+
+        return Math.min(5, shouldBatchRng.nextInt(allPossibleBatches.size()));
     }
 }
