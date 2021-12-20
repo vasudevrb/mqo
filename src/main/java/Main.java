@@ -31,7 +31,7 @@ public class Main {
 
 //        tester.testFindDerivablePercentage();
 //        tester.testMVSubstitution();
-        tester.testDerivabilityMaps();
+        tester.testDerivabilityPerf();
 //        tester.printQuerySizes();
     }
 

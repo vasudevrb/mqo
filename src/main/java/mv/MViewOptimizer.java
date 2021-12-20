@@ -66,7 +66,7 @@ public class MViewOptimizer {
     }
 
     public RelNode substitute(RelOptMaterialization materialization, RelNode query) {
-        long t1 = System.currentTimeMillis();
+//        long t1 = System.currentTimeMillis();
         List<RelNode> substitutes = new SubstitutionVisitor(canonicalize(materialization.queryRel), canonicalize(query))
                 .go(materialization.tableRel);
         RelNode node = substitutes.stream().findFirst().map(this::uncanonicalize).orElse(null);
@@ -76,9 +76,15 @@ public class MViewOptimizer {
         }
 
 
-        long t2 = System.currentTimeMillis();
-        System.out.println("Matching MV with query took " + (t2 - t1) + " ms");
+//        long t2 = System.currentTimeMillis();
+//        System.out.println("Matching MV with query took " + (t2 - t1) + " ms");
         return node;
+    }
+
+    public RelNode substitute2(Materialization materialization, RelNode query) {
+        List<RelNode> substitutes = new SubstitutionVisitor(materialization.queryRel, query)
+                .go(materialization.tableRel);
+        return substitutes != null && !substitutes.isEmpty() ? substitutes.get(0) : null;
     }
 
     private RelNode canonicalize(RelNode rel) {

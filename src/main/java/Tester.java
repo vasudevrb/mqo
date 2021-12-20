@@ -5,6 +5,7 @@ import common.QueryExecutor;
 import common.QueryUtils;
 import common.Utils;
 import mv.MViewOptimizer;
+import mv.Materialization;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
@@ -41,14 +42,20 @@ public class Tester {
             GROUP BY "l_linenumber", "l_quantity"
          */
         String mv = """
-                SELECT "o_totalprice", "o_orderkey", "o_custkey", "c_name", "c_acctbal"
-                FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
-                WHERE ("o_totalprice" < 89717.34 AND "c_acctbal" < 300)
+                SELECT "l_discount", "l_quantity", "l_shipdate"
+                 FROM "public"."lineitem"
+                 WHERE "l_shipdate" < date '1994-06-02'
+                 AND "l_shipdate" > date '1994-01-01'
+                 AND "l_discount" > 0.02
+                 AND "l_quantity" > 32
                 """;
         String q = """
-                SELECT "o_totalprice", "o_orderkey", "o_custkey", "c_name", "c_acctbal"
-                FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
-                WHERE ("o_totalprice" < 89717.34 AND "c_acctbal" < 300)
+                SELECT "l_discount"
+                 FROM "public"."lineitem"
+                 WHERE "l_shipdate" < date '1994-04-02'
+                 AND "l_shipdate" > date '1994-03-01'
+                 AND "l_discount" > 0.05
+                 AND "l_quantity" > 37
                 """;
 
         //MV execution
@@ -178,22 +185,34 @@ public class Tester {
         System.out.println("Number of derivable: " + numDerivable + ", " + (((double) numDerivable) * 100 / queries.size()) + "%");
     }
 
-    public void testDerivabilityMaps() throws IOException {
-        List<String> queries = QueryReader.getQueries(10).stream().flatMap(Collection::stream).toList();
+    public void testDerivabilityPerf() throws IOException {
+        List<String> queries = QueryReader.getQueries(1).stream().flatMap(Collection::stream).toList();
 
-        HashMap<String, List<Integer>> map = new HashMap<>();
+        List<SqlNode> validatedNodes = new ArrayList<>();
+        for (int i = 0; i < queries.size(); i++) {
+            validatedNodes.add(executor.validate(queries.get(i)));
+        }
+
+        long t1 = System.currentTimeMillis();
         List<RelOptMaterialization> mats = new ArrayList<>();
+        for (int i = 0; i < queries.size(); i++) {
+            String query = queries.get(i);
 
-        for (String query : queries) {
-            SqlNode validated = executor.validate(query);
-            RelNode logical = executor.getLogicalPlan(validated);
+            RelNode logical = executor.getLogicalPlan(validatedNodes.get(i));
+            RelOptMaterialization m = optimizer.materialize(query, logical);
+            mats.add(m);
+        }
+        long timeCreateMats = System.currentTimeMillis() - t1;
 
-            System.out.printf("Adding query %d/%d", queries.indexOf(query), queries.size());
-            System.out.println();
-            mats.add(optimizer.materialize(query, logical));
+        t1 = System.currentTimeMillis();
+        HashMap<String, List<Integer>> map = new HashMap<>();
+        List<Materialization> mats2 = new ArrayList<>();
+        for (int i = 0; i < mats.size(); i++) {
+            SqlNode validated = validatedNodes.get(i);
+            mats2.add(new Materialization(mats.get(i)));
 
             String key = String.join(",", QueryUtils.from(validated));
-            int index = mats.size() - 1;
+            int index = mats2.size() - 1;
 
             if (map.containsKey(key)) {
                 map.get(key).add(index);
@@ -204,45 +223,61 @@ public class Tester {
                 map.put(key, items);
             }
         }
+        long timeCreateMap = System.currentTimeMillis() - t1;
 
-        System.out.println("Added all materialized views");
+        System.out.println("Time taken to materialize: " + timeCreateMats + " ms");
+        System.out.println("Additional time for creating a map " + timeCreateMap + " ms");
+
+        for (int i = 0; i < 100; i++) {
+            testNormalDerivability(queries, mats);
+        }
+
         DescriptiveStatistics stats = new DescriptiveStatistics();
-
-        //Without any maps
-
-        for (int k=0; k < 100; k++) {
-            ql:
-            for (int i = queries.size() - 1; i >= 0; i--) {
-                long t1 = System.currentTimeMillis();
-                String query = queries.get(i);
-                RelNode logical = executor.getLogicalPlan(query);
-                for (RelOptMaterialization m : mats) {
-                    if (optimizer.substitute(m, logical) != null) {
-                        stats.addValue(System.currentTimeMillis() - t1);
-                        continue ql;
-                    }
-                }
-            }
+        for (int i = 0; i < 100; i++) {
+            long t2 = System.currentTimeMillis();
+            testMapDerivability(queries, mats2, map);
+            stats.addValue(System.currentTimeMillis() - t2);
         }
 
         System.out.println(stats);
         stats.clear();
 
-        for (int k=0; k < 100; k++) {
-            for (int i = queries.size() - 1; i >= 0; i--) {
-                //With hashmap
-                long t1 = System.currentTimeMillis();
-                SqlNode validated = executor.validate(queries.get(i));
-                RelNode logical = executor.getLogicalPlan(validated);
-                List<Integer> possible = map.get(String.join(",", QueryUtils.from(validated)));
-                if (possible != null && !possible.isEmpty()) {
-                    optimizer.substitute(mats.get(possible.get(0)), logical);
-                    stats.addValue(System.currentTimeMillis() - t1);
-                }
-            }
+        for (int i = 0; i < 100; i++) {
+            long t2 = System.currentTimeMillis();
+            testNormalDerivability(queries, mats);
+            stats.addValue(System.currentTimeMillis() - t2);
         }
 
         System.out.println(stats);
+    }
+
+    private void testNormalDerivability(List<String> queries, List<RelOptMaterialization> mats) {
+        ql:
+        for (int i = queries.size() - 1; i >= 0; i--) {
+            String query = queries.get(i);
+            RelNode logical = executor.getLogicalPlan(query);
+            for (RelOptMaterialization m : mats) {
+                if (optimizer.substitute(m, logical) != null) {
+                    continue ql;
+                }
+            }
+        }
+    }
+
+    private void testMapDerivability(List<String> queries, List<Materialization> mats, HashMap<String, List<Integer>> map) {
+        ql:
+        for (int i = queries.size() - 1; i >= 0; i--) {
+            SqlNode validated = executor.validate(queries.get(i));
+            RelNode logical = QueryUtils.canonicalize(executor.getLogicalPlan(validated));
+            List<Integer> possible = map.get(String.join(",", QueryUtils.from(validated)));
+            if (possible != null && !possible.isEmpty()) {
+                for (Materialization m : mats) {
+                    if (optimizer.substitute2(m, logical) != null) {
+                        continue ql;
+                    }
+                }
+            }
+        }
     }
 
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
