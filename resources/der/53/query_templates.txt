@@ -225,7 +225,7 @@ SELECT "l_orderkey", "l_partkey", "l_discount", "l_tax", "l_shipdate", "l_quanti
 ==========================
 % 12
 
-SELECT "l_quantity", "l_extendedprice", "l_discount", "l_tax" from "lineitem" where "l_tax" > %.2f
+SELECT "l_discount", "l_quantity" from "lineitem" where "l_tax" > %.2f
 
 ==========================
 % 13

@@ -220,12 +220,12 @@ SELECT "n_name", "n_regionkey" from "nation" where "n_nationkey" < 20
 ==========================
 % 30
 
-SELECT "l_discount", "l_tax", "l_extendedprice", "l_quantity" from "lineitem" where "l_quantity" < %d AND "l_tax" < %.2f
+SELECT "l_discount", "l_quantity" from "lineitem" where "l_quantity" < %d AND "l_tax" < %.2f
 
 ==========================
 % 31
 
-SELECT "l_quantity", "l_extendedprice", "l_discount", "l_tax" from "lineitem" where "l_tax" < %.2f
+SELECT "l_discount", "l_quantity" from "lineitem" where "l_tax" < %.2f
 
 ==========================
 % 32
