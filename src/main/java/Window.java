@@ -9,6 +9,7 @@ import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import test.QueryProvider;
 
 import java.util.List;
@@ -96,7 +97,14 @@ public class Window {
 
     //TODO: Move canonicalize outside the loop
     private RelNode getSubstitution(SqlNode validated, RelNode logicalPlan) {
-        for (RelOptMaterialization materialization : cache.find(getKey(validated))) {
+        String key = getKey(validated);
+        List<RelOptMaterialization> possibles = cache.find(key);
+
+        String[] spl = StringUtils.splitByWholeSeparator(key, ",");
+        for (String splPart : spl) {
+            possibles.addAll(cache.find(splPart));
+        }
+        for (RelOptMaterialization materialization : possibles) {
             RelNode substituted = optimizer.substitute(materialization, logicalPlan);
             if (substituted != null) {
                 return substituted;

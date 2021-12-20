@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static common.Logger.logCache;
 import static common.Logger.logTime;
@@ -60,7 +61,7 @@ public class Cache<T> {
             return new ArrayList<>();
         }
 
-        return map.get(key).stream().map(CacheItem::getItem).toList();
+        return map.get(key).stream().map(CacheItem::getItem).collect(Collectors.toList());
     }
 
     public void clean() {
