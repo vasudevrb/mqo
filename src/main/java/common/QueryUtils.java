@@ -3,8 +3,12 @@ package common;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptMaterialization;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.commons.lang3.StringUtils;
@@ -158,5 +162,30 @@ public class QueryUtils {
     public static RelOptCost getCost(RelNode node) {
         RelOptCluster cluster = node.getCluster();
         return cluster.getMetadataQuery().getCumulativeCost(node);
+    }
+
+    public static RelNode canonicalize(RelNode node) {
+        HepProgram program =
+                new HepProgramBuilder()
+                        .addRuleInstance(CoreRules.FILTER_PROJECT_TRANSPOSE)
+                        .addRuleInstance(CoreRules.FILTER_MERGE)
+                        .addRuleInstance(CoreRules.FILTER_INTO_JOIN)
+                        .addRuleInstance(CoreRules.JOIN_CONDITION_PUSH)
+                        .addRuleInstance(CoreRules.FILTER_AGGREGATE_TRANSPOSE)
+                        .addRuleInstance(CoreRules.PROJECT_MERGE)
+                        .addRuleInstance(CoreRules.PROJECT_REMOVE)
+                        .addRuleInstance(CoreRules.PROJECT_JOIN_TRANSPOSE)
+                        .addRuleInstance(CoreRules.PROJECT_SET_OP_TRANSPOSE)
+                        .addRuleInstance(CoreRules.AGGREGATE_PROJECT_PULL_UP_CONSTANTS)
+                        .addRuleInstance(CoreRules.FILTER_TO_CALC)
+                        .addRuleInstance(CoreRules.PROJECT_TO_CALC)
+                        .addRuleInstance(CoreRules.FILTER_CALC_MERGE)
+                        .addRuleInstance(CoreRules.PROJECT_CALC_MERGE)
+                        .addRuleInstance(CoreRules.CALC_MERGE)
+                        .build();
+
+        final HepPlanner hepPlanner = new HepPlanner(program);
+        hepPlanner.setRoot(node);
+        return hepPlanner.findBestExp();
     }
 }
