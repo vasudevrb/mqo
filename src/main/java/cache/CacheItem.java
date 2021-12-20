@@ -1,5 +1,7 @@
 package cache;
 
+import java.util.Objects;
+
 public class CacheItem<T> {
     private T item;
 
@@ -11,14 +13,13 @@ public class CacheItem<T> {
     private long lastAccessTime;
     private int numAccesses;
 
-    public CacheItem(T item) {
-        this.item = item;
-        this.lastAccessTime = System.currentTimeMillis();
-    }
+    // To keep track of hashmap keys
+    private String key;
 
-    public CacheItem(T item, long value) {
+    public CacheItem(T item, String key, long value) {
         this.item = item;
         this.value = value;
+        this.key = key;
         this.lastAccessTime = System.currentTimeMillis();
     }
 
@@ -30,6 +31,10 @@ public class CacheItem<T> {
 
     public long getValue() {
         return value;
+    }
+
+    public String getKey() {
+        return key;
     }
 
     public void setValue(long value) {
@@ -50,5 +55,18 @@ public class CacheItem<T> {
 
     public int getNumAccesses() {
         return numAccesses;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CacheItem<?> cacheItem = (CacheItem<?>) o;
+        return value == cacheItem.value && lastAccessTime == cacheItem.lastAccessTime;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, lastAccessTime);
     }
 }

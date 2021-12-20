@@ -4,16 +4,14 @@ import cache.CacheItem;
 import cache.dim.Dimension;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ReplacementPolicy<T> {
 
     float PRUNE_THRESHOLD = 0.8f;
     float PRUNE_TO = 0.7f;
 
-    default long clean(List<CacheItem<T>> items, long currentSize, Dimension dimension) {
-        return clean(items, currentSize, dimension, PRUNE_TO);
-    }
+    List<Integer> getRemovableIndexes(List<CacheItem<T>> items, long currentSize, Dimension dimension);
 
-    // Returns the size of the cache after cleaning
-    long clean(List<CacheItem<T>> items, long currentSize, Dimension dimension, float proportion);
+    Map<String, List<CacheItem<T>>> getRemovableIndexes(Map<String, List<CacheItem<T>>> items, long currentSize, Dimension dimension);
 }

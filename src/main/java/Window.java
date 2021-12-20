@@ -1,7 +1,6 @@
 import batch.QueryBatcher;
 import batch.data.BatchedQuery;
 import cache.Cache;
-import cache.CacheItem;
 import cache.dim.Dimension;
 import cache.policy.ReplacementPolicy;
 import common.*;
@@ -95,13 +94,10 @@ public class Window {
         }
     }
 
-    //TODO: Use a hashmap to only look at materializations that are of the same table
     //TODO: Move canonicalize outside the loop
-    private RelNode getSubstitution(RelNode logicalPlan) {
-        RelNode substituted;
-        for (CacheItem<RelOptMaterialization> item : cache.getItems()) {
-            RelOptMaterialization materialization = item.getItem();
-            substituted = optimizer.substitute(materialization, logicalPlan);
+    private RelNode getSubstitution(SqlNode validated, RelNode logicalPlan) {
+        for (RelOptMaterialization materialization : cache.find(getKey(validated))) {
+            RelNode substituted = optimizer.substitute(materialization, logicalPlan);
             if (substituted != null) {
                 return substituted;
             }
@@ -109,17 +105,22 @@ public class Window {
         return null;
     }
 
+    private String getKey(SqlNode validated) {
+        return String.join(",", QueryUtils.from(validated));
+    }
+
     private RelNode getSubstitution(RelOptMaterialization materialization, RelNode logicalPlan) {
         return optimizer.substitute(materialization, logicalPlan);
     }
 
     private void runIndividualQuery(String q) {
-        RelNode logicalPlan = executor.getLogicalPlan(q);
-        RelNode substituted = getSubstitution(logicalPlan);
+        SqlNode validated = executor.validate(q);
+        RelNode logicalPlan = executor.getLogicalPlan(validated);
+        RelNode substituted = getSubstitution(validated, logicalPlan);
 
         if (substituted == null) {
             System.out.println("Creating MV for \n " + Utils.getPrintableSql(q) + "\n");
-            RelOptMaterialization materialization = optimizer.materialize(q, executor.getLogicalPlan(q));
+            RelOptMaterialization materialization = optimizer.materialize(q, logicalPlan);
 
             long t1 = System.currentTimeMillis();
             long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
@@ -128,7 +129,7 @@ public class Window {
             subtractable += (System.currentTimeMillis() - t1);
             logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + humanReadable(value));
 
-            cache.add(materialization, value);
+            cache.add(materialization, getKey(validated), value);
             //TODO: Profile this, is this executed again? If so, find a way to extract results from
             //TODO: materialized table
             executor.execute(getSubstitution(materialization, logicalPlan), rs -> System.out.println("Executed " + q.replace("\n", " ")));
@@ -148,7 +149,7 @@ public class Window {
         }
 
         // Find out all the queries from the list that couldn't be batched and run them individually
-        List<Integer> batchedIndexes = batched.stream().flatMap(bq -> bq.indexes.stream()).collect(Collectors.toList());
+        List<Integer> batchedIndexes = batched.stream().flatMap(bq -> bq.indexes.stream()).toList();
         List<Integer> unbatchedIndexes = IntStream.range(0, queries.size()).boxed().collect(Collectors.toList());
         unbatchedIndexes.removeAll(batchedIndexes);
         for (int i : unbatchedIndexes) {
@@ -164,8 +165,9 @@ public class Window {
             System.out.println();
             System.out.println("Batched SQL: " + Utils.getPrintableSql(bq.sql));
             System.out.println();
-            RelNode plan = executor.getLogicalPlan(bq.sql);
-            RelNode substitutable = getSubstitution(plan);
+            SqlNode validated = executor.validate(bq.sql);
+            RelNode plan = executor.getLogicalPlan(validated);
+            RelNode substitutable = getSubstitution(validated, plan);
             RelOptMaterialization materialization = null;
             if (substitutable == null) {
                 materialization = optimizer.materialize(bq.sql, plan);
@@ -177,19 +179,19 @@ public class Window {
                 subtractable += (System.currentTimeMillis() - t1);
                 logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + humanReadable(value));
 
-                cache.add(materialization, value);
+                cache.add(materialization, getKey(validated), value);
             }
 
             for (SqlNode partQuery : bq.parts) {
                 RelNode partSubstitutable = materialization != null
                         ? getSubstitution(materialization, executor.getLogicalPlan(partQuery))
-                        : getSubstitution(executor.getLogicalPlan(partQuery));
+                        : getSubstitution(partQuery, executor.getLogicalPlan(partQuery));
 
                 if (partSubstitutable == null) {
                     logError("This shouldn't happen!!!!!! Batch query is substitutable but parts are not");
                     System.out.println(partQuery.toString());
                     System.out.println();
-                    return;
+                    continue;
                 }
                 executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
                 System.out.println();

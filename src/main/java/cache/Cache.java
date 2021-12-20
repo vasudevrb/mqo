@@ -4,7 +4,9 @@ import cache.dim.Dimension;
 import cache.policy.ReplacementPolicy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static common.Logger.logCache;
 import static common.Logger.logTime;
@@ -14,7 +16,8 @@ public class Cache<T> {
 
     public static final List<Integer> SIZES_MB = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
 
-    private final List<CacheItem<T>> items;
+    private final HashMap<String, List<CacheItem<T>>> map;
+
     private final Dimension dimension;
     private final ReplacementPolicy<T> policy;
 
@@ -26,7 +29,7 @@ public class Cache<T> {
     private long currentCacheSize;
 
     public Cache(ReplacementPolicy<T> policy, Dimension dimension) {
-        this.items = new ArrayList<>();
+        this.map = new HashMap<>();
         this.policy = policy;
         this.dimension = dimension;
 
@@ -38,20 +41,37 @@ public class Cache<T> {
         };
     }
 
-    public synchronized void add(T item, long value) {
-        this.items.add(new CacheItem<>(item, value));
+    public void add(T item, String key, long value) {
+        if (map.containsKey(key)) {
+            map.get(key).add(new CacheItem<>(item, key, value));
+        } else {
+            var indexes = new ArrayList<CacheItem<T>>();
+            indexes.add(new CacheItem<>(item, key, value));
+            map.put(key, indexes);
+        }
+
         currentCacheSize += value;
         logTime("Added item: Cache size is " + formatCacheSize());
         cacheSizeWatcher.onCacheSizeChange();
     }
 
-    public List<CacheItem<T>> getItems() {
-        return items;
+    public List<T> find(String key) {
+        if (!map.containsKey(key)) {
+            return new ArrayList<>();
+        }
+
+        return map.get(key).stream().map(CacheItem::getItem).toList();
     }
 
     public void clean() {
-        currentCacheSize = policy.clean(items, currentCacheSize, dimension);
-        logCache("After clean: current size is " + formatCacheSize() + ", length: " + items.size());
+        Map<String, List<CacheItem<T>>> removables = policy.getRemovableIndexes(map, currentCacheSize, dimension);
+
+        for (Map.Entry<String, List<CacheItem<T>>> entry : removables.entrySet()) {
+            map.get(entry.getKey()).removeAll(entry.getValue());
+            entry.getValue().forEach(x -> this.currentCacheSize -= x.getValue());
+        }
+
+        logCache("Cache cleaned. Size: " + formatCacheSize());
     }
 
     private String formatCacheSize() {
