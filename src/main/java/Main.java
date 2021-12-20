@@ -1,6 +1,4 @@
 import cache.Cache;
-import cache.policy.FIFOPolicy;
-import cache.policy.LFUPolicy;
 import cache.policy.LRUPolicy;
 import cache.policy.ReplacementPolicy;
 import common.Configuration;
@@ -15,23 +13,21 @@ public class Main {
     public static void main(String[] args) throws Exception {
         hideLoggerWarnings();
 
-//        args = new String[]{"testCacheSize", "7", "lru"};
+        args = new String[]{"testCacheSize", "7", "lru"};
 
         Configuration config = Configuration.initialize();
 
         Tester tester = new Tester(config);
         if (args.length > 0 && args[0].equals(TEST_MODE_CACHE_SIZE)) {
             int size = Cache.SIZES_MB.get(Integer.parseInt(args[1]));
-            ReplacementPolicy<RelOptMaterialization> pol = args[2].equals("fifo") ? new FIFOPolicy<>()
-                    : args[2].equals("lfu") ? new LFUPolicy<>()
-                    : new LRUPolicy<>();
+            ReplacementPolicy<RelOptMaterialization> pol = new LRUPolicy<>();
 
             tester.testCacheSizeMetrics(size, pol);
         }
 
 //        tester.testFindDerivablePercentage();
 //        tester.testMVSubstitution();
-        tester.testDerivabilityPerf();
+//        tester.testDerivabilityPerf();
 //        tester.printQuerySizes();
     }
 
