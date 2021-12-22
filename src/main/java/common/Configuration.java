@@ -17,7 +17,6 @@ import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -110,7 +109,6 @@ public class Configuration {
 
         CustomPlanner planner = new CustomPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-        planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
 
         planner.addRule(PruneEmptyRules.PROJECT_INSTANCE);
         planner.addRule(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
