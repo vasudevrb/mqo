@@ -1,4 +1,5 @@
 import batch.QueryBatcher;
+import cache.policy.LRUPolicy;
 import cache.policy.ReplacementPolicy;
 import common.Configuration;
 import common.QueryExecutor;
@@ -283,6 +284,11 @@ public class Tester {
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
         System.out.println("Setting cache size " + size + " MB");
         Window window = new Window(config, size, policy);
-        window.run();
+        window.run(false);
+    }
+
+    public void testMain(boolean sequential, int cacheSizeMB) {
+        Window window = new Window(config, cacheSizeMB, new LRUPolicy<>());
+        window.run(sequential);
     }
 }

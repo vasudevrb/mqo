@@ -41,7 +41,7 @@ public class Window {
         this.cache = new Cache<>(policy, Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
     }
 
-    public void run() {
+    public void run(boolean runSequentially) {
         //[0] is the cardinal count, [1] is the number of queries
         int[] count = new int[2];
 
@@ -66,8 +66,12 @@ public class Window {
             count[0] += 1;
             count[1] += qs.size();
 
-//            runSequentially(qs);
-            handle(qs);
+            if (runSequentially) {
+                runSequentially(qs);
+            } else {
+                handle(qs);
+            }
+
             if (count[1] > 640) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();

@@ -14,11 +14,14 @@ import java.util.stream.Collectors;
 
 public class QueryReader {
 
-    private static final String filePath = "resources/der/70/query_templates.txt";
-    private static final String queryMetadataPath = "resources/der/70/query_template_md.txt";
+    public static String dir;
+
     private static final String batchMetadataPath = "resources/batchables.txt";
 
     private static List<String> readQueries() throws IOException {
+        String filePath = "resources/der/" + dir + "/query_templates.txt";
+        System.out.println("Reading queries : " + filePath);
+
         List<String> queries = new ArrayList<>();
 
         List<String> lines = FileUtils.readLines(new File(filePath), Charset.defaultCharset());
@@ -42,6 +45,10 @@ public class QueryReader {
     }
 
     private static List<List<List<String>>> readQueryMetadata() throws IOException {
+        String queryMetadataPath = "resources/der/" + dir + "/query_template_md.txt";
+        System.out.println("Reading metadata : " + queryMetadataPath);
+
+
         List<List<List<String>>> metadata = new ArrayList<>();
 
         List<String> lines = FileUtils.readLines(new File(queryMetadataPath), Charset.defaultCharset());

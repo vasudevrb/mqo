@@ -15,8 +15,6 @@ import static common.Utils.humanReadable;
 
 public class Cache<T> {
 
-    public static final List<Integer> SIZES_MB = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
-
     private final HashMap<String, List<CacheItem<T>>> map;
 
     private final Dimension dimension;
