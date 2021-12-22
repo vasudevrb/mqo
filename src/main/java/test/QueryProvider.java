@@ -60,7 +60,7 @@ public class QueryProvider {
             //TODO: Try a different probability distribution maybe?
             while (true) {
                 try {
-                    Thread.sleep(Utils.getRandomNumber(10 * 1000));
+                    Thread.sleep(Utils.getRandomNumber(5 * 1000));
                     List<String> query = queryProvider.queries.get(i);
                     queue.put(query);
                     i++;
