@@ -50,10 +50,6 @@ public class Window {
             System.out.println("===============================================");
             System.out.printf("%d: (%d)\nNo. of queries: %d\n", count[0], count[1], qs.size());
 
-            System.out.println("~~~~~~~~~~~~~~~~~");
-            System.out.println("Heap: " + humanReadable(Runtime.getRuntime().totalMemory()));
-            System.out.println("~~~~~~~~~~~~~~~~~");
-
 //            if (QueryUtils.getFromString(executor.validate(qs.get(0))).contains("JOIN")) {
 //                count[0] += 1;
 //                count[1] += qs.size();
@@ -147,8 +143,16 @@ public class Window {
     }
 
     private void runBatchQueries(List<String> queries) {
-        //TODO: Check if any of these queries can be executed from MVs.
-        //No point in batching if that's the case.
+        for (int i = queries.size() - 1; i >= 0; i--) {
+            SqlNode validated = executor.validate(queries.get(i));
+            RelNode logical = executor.getLogicalPlan(validated);
+            RelNode substituted = getSubstitution(validated, logical);
+            if (substituted != null) {
+                executor.execute(substituted, rs -> System.out.println("OOB Executed"));
+                queries.remove(i);
+            }
+        }
+
         List<BatchedQuery> batched = batcher.batch(queries);
 
         System.out.println("Batching queries:");
