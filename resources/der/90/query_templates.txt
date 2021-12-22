@@ -127,7 +127,7 @@ GROUP BY "ps_suppkey"
 ==========================
 % 17
 
-SELECT "c_name", SUM("c_acctbal")
+SELECT "c_name", avg("c_acctbal")
 FROM "customer"
 WHERE "c_acctbal" < %.2f AND ("c_custkey" < %d OR "c_custkey" > %d) OR "c_acctbal" < %.2f
 group by "c_name"
@@ -137,7 +137,7 @@ group by "c_name"
 % Filter-Join-Aggregate queries
 % 18
 
-SELECT "n_nationkey", sum("s_acctbal")
+SELECT "n_nationkey", avg("s_acctbal")
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
 WHERE "s_suppkey" < %d  AND "s_acctbal" < %.2f
 GROUP BY "n_nationkey"
@@ -145,7 +145,7 @@ GROUP BY "n_nationkey"
 ==========================
 % 19
 
-SELECT "n_nationkey", sum("s_acctbal")
+SELECT "n_nationkey", avg("s_acctbal")
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
 WHERE "s_suppkey" < %d OR "s_acctbal" < %.2f
 GROUP BY "n_nationkey"
@@ -161,7 +161,7 @@ GROUP BY "l_linenumber", "l_quantity"
 ==========================
 % 21
 
-SELECT "l_linenumber", count("l_quantity"), sum("ps_availqty"), avg("ps_supplycost"), max("l_discount")
+SELECT "l_linenumber", count("l_quantity"), avg("ps_availqty"), avg("ps_supplycost"), max("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 GROUP BY "l_linenumber"
@@ -177,7 +177,7 @@ GROUP BY "s_name", "c_name", "n_nationkey"
 ==========================
 % 23
 
-SELECT "c_name", sum("c_acctbal"), avg("o_totalprice")
+SELECT "c_name", avg("c_acctbal"), avg("o_totalprice")
 FROM "orders" JOIN "customer" on "o_custkey" = "c_custkey"
 WHERE "o_totalprice" < %.2f AND "c_acctbal" < %.2f
 GROUP BY "c_name"
@@ -185,7 +185,7 @@ GROUP BY "c_name"
 ==========================
 % 24
 
-SELECT "s_suppkey", "ps_partkey", avg("ps_supplycost"), sum("ps_availqty"), avg("s_acctbal")
+SELECT "s_suppkey", "ps_partkey", avg("ps_supplycost"), avg("ps_availqty"), avg("s_acctbal")
 FROM "partsupp" JOIN "supplier" on "ps_suppkey" = "s_suppkey"
 WHERE "ps_availqty" > %d AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 GROUP BY "s_suppkey", "ps_partkey"
