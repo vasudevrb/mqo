@@ -199,14 +199,14 @@ public class Window {
             }
 
             for (SqlNode partQuery : bq.parts) {
+                RelNode logicalPlan = executor.getLogicalPlan(partQuery);
                 RelNode partSubstitutable = materialization != null
-                        ? getSubstitution(materialization, executor.getLogicalPlan(partQuery))
-                        : getSubstitution(partQuery, executor.getLogicalPlan(partQuery));
+                        ? getSubstitution(materialization, logicalPlan)
+                        : getSubstitution(partQuery, logicalPlan);
 
                 if (partSubstitutable == null) {
-                    logError("This shouldn't happen!!!!!! Batch query is substitutable but parts are not");
-                    System.out.println(partQuery.toString());
-                    System.out.println();
+                    logError("This shouldn't happen!!!!!! Batch query is substitutable but parts are not. Exec query normally");
+                    executor.execute(logicalPlan, rs -> System.out.println("Executed " + partQuery.toString()));
                     continue;
                 }
                 executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
