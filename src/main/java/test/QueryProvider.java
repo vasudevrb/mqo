@@ -16,7 +16,7 @@ public class QueryProvider {
 
     public QueryProvider() {
         try {
-            queries = QueryReader.getQueries(20);
+            queries = QueryReader.getQueries(10);
 //            for (int i = 0; i < 20; i++) Utils.shuffle(queries);
         } catch (IOException e) {
             e.printStackTrace();

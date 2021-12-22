@@ -72,7 +72,7 @@ public class Window {
                 handle(qs);
             }
 
-            if (count[1] > 640) {
+            if (count[1] > 320) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
                 logTime("Stopping... Time: " + time + " ms");

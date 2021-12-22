@@ -7,11 +7,7 @@ import java.util.List;
 public class Main {
 
     public static final List<Integer> CACHE_SIZES = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
-    public static final List<String> DERIVABILITIES = List.of("43", "53", "55", "57", "58", "61", "63", "66",
-            "70", "75", "80", "83", "87", "90", "93", "97");
-
-
-    private static final String TEST_MODE_CACHE_SIZE = "testCacheSize";
+    public static final List<String> DERIVABILITIES = List.of("40", "45", "54", "60", "66", "75", "78", "83", "88", "90");
 
     /*
     The execution is managed by command line arguments

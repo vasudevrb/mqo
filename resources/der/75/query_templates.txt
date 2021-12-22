@@ -29,12 +29,12 @@ WHERE "c_acctbal" < %.2f AND ("c_custkey" < %d OR "c_custkey" > %d) OR "c_acctba
 
 SELECT "s_name", "s_suppkey", "s_acctbal", "s_nationkey"
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
-WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) AND "s_acctbal" < %.2f
+WHERE ("s_suppkey" < 5000 OR "s_suppkey" > 5002) AND "s_acctbal" < 9987
 
 ==========================
 % 7
 
-SELECT "l_linenumber", "l_quantity", "ps_availqty", "ps_supplycost", "l_discount"
+SELECT "l_linenumber", "l_quantity", "ps_availqty", "ps_supplycost", "l_discount", "ps_partkey"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 
@@ -163,7 +163,7 @@ GROUP BY "l_linenumber", "l_quantity"
 
 SELECT "l_linenumber", count("l_quantity"), avg("ps_availqty"), avg("ps_supplycost"), max("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" > %d AND "ps_availqty" > %d AND "ps_supplycost" > %.2f
+WHERE "ps_partkey" > %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 GROUP BY "l_linenumber"
 
 ==========================

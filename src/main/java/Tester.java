@@ -144,7 +144,7 @@ public class Tester {
 
     public void testFindDerivablePercentage() throws IOException {
         boolean deAgg = true;
-        List<String> queries = QueryReader.getQueries(20).stream().flatMap(Collection::stream).toList();
+        List<String> queries = QueryReader.getQueries(10).stream().flatMap(Collection::stream).toList();
 
         MViewOptimizer op = new MViewOptimizer(config);
         QueryExecutor executor = new QueryExecutor(config);

@@ -65,7 +65,7 @@ WHERE "ps_availqty" > %d AND "s_acctbal" < %.2f AND "ps_supplycost" > %.2f
 
 SELECT "l_quantity", "l_extendedprice", "l_shipdate", "l_tax", "l_discount"
 FROM "lineitem"
-WHERE "l_discount" > %.2f AND "l_quantity" > %d AND "l_tax" < %.2f
+WHERE "l_discount" > 0.06 AND "l_quantity" > 15 AND "l_tax" < 0.07
 
 ==========================
 % 2

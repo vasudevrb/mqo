@@ -147,7 +147,7 @@ GROUP BY "n_nationkey"
 
 SELECT "n_nationkey", avg("s_acctbal")
 FROM "supplier" JOIN "nation" on "s_nationkey" = "n_nationkey"
-WHERE "s_suppkey" < %d OR "s_acctbal" < %.2f
+WHERE "s_suppkey" < %d AND "s_acctbal" < %.2f
 GROUP BY "n_nationkey"
 
 ==========================
@@ -205,7 +205,7 @@ SELECT "s_name", "s_acctbal" from "supplier" where "s_acctbal" between %.2f and 
 ==========================
 % 27
 
-SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > %d and "ps_availqty" < %d
+SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > 2500 and "ps_availqty" < 9877
 
 ==========================
 % 28
