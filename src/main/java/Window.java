@@ -75,7 +75,7 @@ public class Window {
             if (count[1] > 320) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
                 System.out.println();
-                logTime("Stopping... Time: " + time + " ms");
+                logTime("Stopping... Time: " + time + " ms, Time no sub: " + (System.currentTimeMillis() - t1) + " ms");
                 provider.stopListening();
             }
         });
