@@ -34,7 +34,7 @@ WHERE ("s_suppkey" < %d OR "s_suppkey" > %d) AND "s_acctbal" < %.2f
 ==========================
 % 15
 
-SELECT "l_linenumber", "l_quantity", "ps_availqty", "ps_supplycost", "l_discount"
+SELECT "ps_partkey", "ps_availqty", "ps_supplycost", "l_discount"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 
@@ -161,9 +161,9 @@ GROUP BY "l_linenumber", "l_quantity"
 ==========================
 % 29
 
-SELECT "l_linenumber", count("l_quantity"), avg("ps_availqty"), avg("ps_supplycost"), max("l_discount")
+SELECT "l_linenumber", avg("ps_supplycost"), max("l_discount")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" > %d AND "ps_availqty" > %d AND "ps_supplycost" > %.2f
+WHERE "ps_partkey" > %d AND "ps_availqty" > %d AND "ps_supplycost" < %.2f
 GROUP BY "l_linenumber"
 
 ==========================

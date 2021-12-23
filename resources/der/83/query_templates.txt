@@ -34,7 +34,7 @@ WHERE "s_suppkey" < 5000 AND "s_acctbal" < 9987
 ==========================
 % 7
 
-SELECT "l_linenumber", "l_quantity", "ps_availqty", "ps_supplycost", "l_discount", "ps_partkey"
+SELECT "ps_supplycost", "l_discount", "ps_partkey"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" < 197662 AND "ps_availqty" < 8798 AND "ps_supplycost" < 811
 
@@ -161,7 +161,7 @@ GROUP BY "l_linenumber", "l_quantity"
 ==========================
 % 21
 
-SELECT "l_linenumber", count("l_quantity"), avg("ps_availqty"), avg("ps_supplycost"), max("l_discount")
+SELECT "l_linenumber", avg("ps_availqty")
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
 GROUP BY "l_linenumber"
