@@ -25,6 +25,8 @@ public class Main {
         System.out.println("########################################################################################");
         System.out.println("########################################################################################");
 
+//        args = new String[] {"1", "1", "3"};
+
         int modeArg = Integer.parseInt(args[0]);
         int cacheSizeArg = Integer.parseInt(args[1]);
         int derivabilityArg = Integer.parseInt(args[2]);
@@ -44,6 +46,8 @@ public class Main {
 //        tester.testFindDerivablePercentage();
 //        tester.testMVSubstitution();
 //        tester.testDerivabilityPerf();
+//        tester.testBatch2();
+//        tester.testMultipleExecutions();
 //        tester.printQuerySizes();
     }
 

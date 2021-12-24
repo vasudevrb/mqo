@@ -77,6 +77,7 @@ public class Window {
                 System.out.println();
                 logTime("Stopping... Time: " + time + " ms, Time no sub: " + (System.currentTimeMillis() - t1) + " ms");
                 provider.stopListening();
+                System.exit(0);
             }
         });
     }
@@ -157,12 +158,12 @@ public class Window {
             }
         }
 
-        List<BatchedQuery> batched = batcher.batch(queries);
-
         System.out.println("Batching queries:");
         for (String query : queries) {
             System.out.println(Utils.getPrintableSql(query) + "\n");
         }
+
+        List<BatchedQuery> batched = batcher.batch(queries);
 
         // Find out all the queries from the list that couldn't be batched and run them individually
         List<Integer> batchedIndexes = batched.stream().flatMap(bq -> bq.indexes.stream()).toList();

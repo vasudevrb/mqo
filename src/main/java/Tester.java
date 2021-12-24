@@ -1,4 +1,5 @@
 import batch.QueryBatcher;
+import batch.data.BatchedQuery;
 import cache.policy.LRUPolicy;
 import cache.policy.ReplacementPolicy;
 import common.Configuration;
@@ -116,6 +117,44 @@ public class Tester {
         times.forEach(stats::addValue);
 
         System.out.println(stats);
+    }
+
+    public void testBatch2() {
+        List<String> queries = new ArrayList<>();
+
+        queries.add("""
+                SELECT l_quantity, l_extendedprice, l_shipdate, l_tax, l_discount
+                                 FROM lineitem
+                                 WHERE l_discount > 0.06 AND l_quantity > 15
+                """);
+
+        queries.add("""
+                SELECT count(*), l_quantity, l_discount
+                                             FROM lineitem
+                                             WHERE l_discount > 0.08 OR (l_quantity > 23 AND l_tax < 0.02)
+                                             GROUP BY l_quantity, l_discount
+                """);
+
+//        queries.add("""
+//                SELECT "ps_partkey", "ps_suppkey", "ps_availqty", "ps_supplycost"
+//               FROM "partsupp"
+//               WHERE ("ps_availqty" < 98 AND "ps_partkey" < 98999) OR ("ps_availqty" > 8532 AND "ps_partkey" > 162348)
+//                """);
+
+//        queries.add("""
+//                SELECT "ps_partkey", "ps_suppkey", "ps_availqty", "ps_supplycost"
+//                FROM "partsupp"
+//                WHERE ("ps_availqty" < 98 AND "ps_partkey" < 98999) OR ("ps_availqty" > 8532 AND "ps_partkey" > 162348)
+//                """);
+//
+//        queries.add("""
+//                SELECT "ps_partkey", "ps_suppkey", "ps_availqty", "ps_supplycost"
+//                FROM "partsupp"
+//                WHERE ("ps_availqty" < 98 AND "ps_partkey" < 98999) OR ("ps_availqty" > 8532 AND "ps_partkey" > 162348)
+//                """);
+
+        List<BatchedQuery> bq = new QueryBatcher(config, executor).batch(queries);
+        System.out.println(Utils.getPrintableSql(bq.get(0).sql));
     }
 
     public void printQuerySizes() throws IOException {

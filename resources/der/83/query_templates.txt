@@ -36,7 +36,7 @@ WHERE "s_suppkey" < 5000 AND "s_acctbal" < 9987
 
 SELECT "ps_supplycost", "l_discount", "ps_partkey"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" < 197662 AND "ps_availqty" < 8798 AND "ps_supplycost" < 811
+WHERE "ps_partkey" < 1976 AND "ps_availqty" < 8798 AND "ps_supplycost" < 811
 
 ==========================
 % 8

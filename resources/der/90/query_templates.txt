@@ -36,7 +36,7 @@ WHERE "s_suppkey" < 5000 AND "s_acctbal" < 9987
 
 SELECT "l_linenumber", "l_quantity", "ps_availqty"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
-WHERE "ps_partkey" < 197662 AND "ps_availqty" < 8798 AND "ps_supplycost" < 811
+WHERE "ps_partkey" < 19762 AND "ps_availqty" < 879 AND "ps_supplycost" < 811
 
 ==========================
 % 8
@@ -205,7 +205,7 @@ SELECT "s_name", "s_acctbal" from "supplier" where "s_acctbal" between %.2f and 
 ==========================
 % 27
 
-SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > 2500 and "ps_availqty" < 9877
+SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > 2500 and "ps_availqty" < 9777
 
 ==========================
 % 28
