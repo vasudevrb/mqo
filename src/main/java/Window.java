@@ -16,7 +16,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static common.Logger.*;
+import static common.Logger.logError;
+import static common.Logger.logTime;
 import static common.Utils.humanReadable;
 
 public class Window {
@@ -42,44 +43,32 @@ public class Window {
     }
 
     public void run(boolean runSequentially) {
-        //[0] is the cardinal count, [1] is the number of queries
-        int[] count = new int[2];
+        int count = 0, numQueries = 0;
 
         final long t1 = System.currentTimeMillis();
-        provider.listen(qs -> {
+        for (List<String> qs : provider.queries.subList(0, 5)) {
             System.out.println("===============================================");
-            System.out.printf("%d: (%d)\nNo. of queries: %d\n", count[0], count[1], qs.size());
+            System.out.printf("%d: (%d)\nNo. of queries: %d\n", count, numQueries, qs.size());
 
-//            if (QueryUtils.getFromString(executor.validate(qs.get(0))).contains("JOIN")) {
-//                count[0] += 1;
-//                count[1] += qs.size();
-//                return;
-//            }
-
-            if (count[0] % 32 == 0) {
+            if (count % 5 == 0) {
                 long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
-                System.out.println();
-                logFinalTime("Completed executing " + count[0] + " queries in " + time + "ms");
-                System.out.println();
+                logTime(String.format("Executed: %d: (%d) in %d ms", count, numQueries, time));
             }
 
-            count[0] += 1;
-            count[1] += qs.size();
+            count += 1;
+            numQueries += qs.size();
 
-            if (runSequentially) {
-                runSequentially(qs);
-            } else {
-                handle(qs);
-            }
+            if (runSequentially) runSequentially(qs);
+            else handle(qs);
+        }
 
-            if (count[1] > 320) {
-                long time = System.currentTimeMillis() - t1 - subtractable - CustomPlanner.diff;
-                System.out.println();
-                logTime("Stopping... Time: " + time + " ms, Time no sub: " + (System.currentTimeMillis() - t1) + " ms");
-                provider.stopListening();
-                System.exit(0);
-            }
-        });
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        long time = System.currentTimeMillis() - t1 - subtractable;
+        logTime("Stopping... Time: " + time + " ms, Time no sub: " + (System.currentTimeMillis() - t1) + " ms");
     }
 
     private void runSequentially(List<String> queries) {
@@ -123,6 +112,7 @@ public class Window {
     }
 
     private void runIndividualQuery(String q) {
+        System.out.println("Normal exec " + Utils.getPrintableSql(q));
         SqlNode validated = executor.validate(q);
         RelNode logicalPlan = executor.getLogicalPlan(validated);
         RelNode substituted = getSubstitution(validated, logicalPlan);
@@ -144,6 +134,9 @@ public class Window {
             executor.execute(getSubstitution(materialization, logicalPlan), rs -> System.out.println("Executed " + q.replace("\n", " ")));
         } else {
             executor.execute(substituted, rs -> System.out.println("MVS Executed " + q.replace("\n", " ")));
+            long t1 = System.currentTimeMillis();
+//            System.gc();
+            subtractable += (System.currentTimeMillis() - t1);
         }
     }
 

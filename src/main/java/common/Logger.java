@@ -18,8 +18,6 @@ public class Logger {
     }
 
     public static void logError(String log) {
-        System.out.println(colorize("                                                                                  ", BLACK_TEXT(), RED_BACK()));
         System.out.println(colorize(log, BLACK_TEXT(), RED_BACK()));
-        System.out.println(colorize("                                                                                  ", BLACK_TEXT(), RED_BACK()));
     }
 }
