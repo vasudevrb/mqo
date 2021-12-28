@@ -153,10 +153,9 @@ GROUP BY "n_nationkey"
 ==========================
 % 20
 
-SELECT "l_linenumber", "l_quantity", avg("ps_supplycost"), avg("l_discount")
+SELECT "l_linenumber", "l_quantity"
 FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
 WHERE "ps_partkey" < %d AND "ps_availqty" < %d AND "ps_supplycost" < %.2f
-GROUP BY "l_linenumber", "l_quantity"
 
 ==========================
 % 21

@@ -121,13 +121,13 @@ public class QueryExecutor {
 
     private void _execute(RelNode relNode, Consumer<ResultSet> consumer) throws SQLException {
         long t1 = System.currentTimeMillis();
-//        RelNode physicalNode = getPhysicalPlan(relNode);
+        RelNode physicalNode = getPhysicalPlan(relNode);
         long physicalTime = System.currentTimeMillis() - t1;
 
         connection.setAutoCommit(false);
         RelRunner runner = connection.unwrap(RelRunner.class);
         t1 = System.currentTimeMillis();
-        PreparedStatement run = runner.prepareStatement(relNode);
+        PreparedStatement run = runner.prepareStatement(physicalNode);
         run.setFetchSize(10000);
         long compileTime = System.currentTimeMillis() - t1;
 

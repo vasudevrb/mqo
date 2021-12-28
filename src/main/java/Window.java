@@ -46,7 +46,7 @@ public class Window {
         int count = 0, numQueries = 0;
 
         final long t1 = System.currentTimeMillis();
-        for (List<String> qs : provider.queries.subList(0, 5)) {
+        for (List<String> qs : provider.queries) {
             System.out.println("===============================================");
             System.out.printf("%d: (%d)\nNo. of queries: %d\n", count, numQueries, qs.size());
 
@@ -62,11 +62,6 @@ public class Window {
             else handle(qs);
         }
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         long time = System.currentTimeMillis() - t1 - subtractable;
         logTime("Stopping... Time: " + time + " ms, Time no sub: " + (System.currentTimeMillis() - t1) + " ms");
     }
@@ -123,7 +118,7 @@ public class Window {
 
             long t1 = System.currentTimeMillis();
             long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
-                    ? QueryUtils.getTableSize(q, materialization, executor)
+                    ? QueryUtils.getTableSize2(q, materialization, executor)
                     : 1;
             subtractable += (System.currentTimeMillis() - t1);
             logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + humanReadable(value));
@@ -134,9 +129,6 @@ public class Window {
             executor.execute(getSubstitution(materialization, logicalPlan), rs -> System.out.println("Executed " + q.replace("\n", " ")));
         } else {
             executor.execute(substituted, rs -> System.out.println("MVS Executed " + q.replace("\n", " ")));
-            long t1 = System.currentTimeMillis();
-//            System.gc();
-            subtractable += (System.currentTimeMillis() - t1);
         }
     }
 
@@ -184,7 +176,7 @@ public class Window {
 
                 long t1 = System.currentTimeMillis();
                 long value = cache.getDimension().getType() == Dimension.Type.SIZE_BYTES
-                        ? QueryUtils.getTableSize(bq.sql, materialization, executor)
+                        ? QueryUtils.getTableSize2(bq.sql, materialization, executor)
                         : 1;
                 subtractable += (System.currentTimeMillis() - t1);
                 logTime("Calculating table size took " + (System.currentTimeMillis() - t1) + " ms, Size:" + humanReadable(value));
