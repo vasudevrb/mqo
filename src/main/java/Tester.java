@@ -1,5 +1,7 @@
 import batch.QueryBatcher;
 import batch.data.BatchedQuery;
+import cache.Cache;
+import cache.dim.Dimension;
 import cache.policy.LRUPolicy;
 import cache.policy.ReplacementPolicy;
 import common.Configuration;
@@ -12,6 +14,7 @@ import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import test.QueryReader;
 
@@ -20,6 +23,7 @@ import java.util.*;
 
 import static common.Logger.logCache;
 import static common.Utils.humanReadable;
+import static org.apache.commons.io.FileUtils.ONE_GB;
 
 public class Tester {
 
@@ -188,41 +192,48 @@ public class Tester {
         MViewOptimizer op = new MViewOptimizer(config);
         QueryExecutor executor = new QueryExecutor(config);
 
-        //with der file: 43
+        //nextDouble > 0.5 = 35
+        //nextDouble > 0.8 = 25
+        //nextDouble > 0.85 = 20
+        //nextDouble > 0.94 = 10
 
-        //25%: r.nextInt(7) == 1
-        //20%: r.nextInt(10) == 1
-        //12%: r.nextInt(20) == 1
-        //9.5%: r.nextInt(30) == 1
-        //5%: r.nextInt(50) == 1
-        //0%: false
         Random r = new Random(141221);
 
-        List<RelOptMaterialization> materializations = new ArrayList<>();
+        Cache<RelOptMaterialization> cache = new Cache<>(new LRUPolicy<>(), Dimension.SIZE(10 * ONE_GB));
         int numDerivable = 0;
         outerloop:
         for (int i = 0; i < queries.size(); i++) {
             System.out.println("=================================");
             logCache("Processing " + i);
             System.out.println(Utils.getPrintableSql(queries.get(i)));
-            for (RelOptMaterialization m : materializations) {
+            SqlNode node = executor.validate(queries.get(i));
+            String key = getKey(node);
+
+            List<RelOptMaterialization> possibles = cache.find(key);
+
+            String[] spl = StringUtils.splitByWholeSeparator(key, ",");
+            for (String splPart : spl) {
+                possibles.addAll(cache.find(splPart));
+            }
+
+            for (RelOptMaterialization m : possibles) {
                 RelNode sub = op.substitute(m, executor.getLogicalPlan(queries.get(i)));
-                if (sub != null) {
+                if (sub != null && r.nextDouble() > 0.5) {
                     numDerivable++;
                     continue outerloop;
                 }
             }
 
             String mat = queries.get(i);
-//            SqlNode qp = executor.parse(mat);
-//            if (QueryUtils.isAggregate(qp)) {
-//                mat = executor.deAggregateQuery(qp);
-//            }
 
-            materializations.add(op.materialize(mat, executor.getLogicalPlan(mat)));
+            cache.add(op.materialize(mat, executor.getLogicalPlan(mat)), key, 1);
         }
         System.out.println();
         System.out.println("Number of derivable: " + numDerivable + ", " + (((double) numDerivable) * 100 / queries.size()) + "%");
+    }
+
+    private String getKey(SqlNode validated) {
+        return String.join(",", QueryUtils.from(validated));
     }
 
     public void testDerivabilityPerf() throws IOException {
@@ -318,6 +329,32 @@ public class Tester {
                 }
             }
         }
+    }
+
+    public void normalExecTest() {
+        String mv = """
+                SELECT "ps_partkey", "ps_availqty", "ps_supplycost"
+                FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
+                WHERE "ps_partkey" < 206 AND "ps_availqty" < 379 AND "ps_supplycost" < 100
+                """;
+
+        String q = """
+                SELECT "ps_partkey", "ps_availqty", "ps_supplycost"
+                FROM "lineitem" JOIN "partsupp" on "l_partkey" = "ps_partkey"
+                WHERE "ps_partkey" < 116 AND "ps_availqty" < 269 AND "ps_supplycost" < 7.44
+                """;
+
+        long t1 = System.currentTimeMillis();
+        executor.execute(executor.getLogicalPlan(q), null);
+        System.out.println("Normal phys calc: " + (System.currentTimeMillis() - t1) + " ms");
+
+        RelOptMaterialization m = optimizer.materialize(mv, executor.getLogicalPlan(mv));
+
+        t1 = System.currentTimeMillis();
+        executor.execute(optimizer.substitute(m, executor.getLogicalPlan(q)), null);
+        System.out.println("Sub phys calc: " + (System.currentTimeMillis() - t1) + " ms");
+
+
     }
 
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {

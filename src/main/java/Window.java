@@ -13,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import test.QueryProvider;
 
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -79,6 +80,8 @@ public class Window {
             runBatchQueries(queries);
         }
     }
+
+    Random r = new Random(141221);
 
     //TODO: Move canonicalize outside the loop
     private RelNode getSubstitution(SqlNode validated, RelNode logicalPlan) {

@@ -25,7 +25,7 @@ public class Main {
         System.out.println("########################################################################################");
         System.out.println("########################################################################################");
 
-//        args = new String[] {"1", "1", "3"};
+        args = new String[] {"1", "1", "3"};
 
         int modeArg = Integer.parseInt(args[0]);
         int cacheSizeArg = Integer.parseInt(args[1]);
@@ -41,8 +41,9 @@ public class Main {
         System.out.printf("Starting with mode: %s, cache size: %dMB, derivability: %s\n", mode, size, DERIVABILITIES.get(derivabilityArg));
 
         QueryReader.dir = der;
-        tester.testMain(modeArg == 0, size);
+//        tester.testMain(modeArg == 0, size);
 
+        tester.normalExecTest();
 //        tester.testFindDerivablePercentage();
 //        tester.testMVSubstitution();
 //        tester.testDerivabilityPerf();
