@@ -127,16 +127,21 @@ public class Tester {
         List<String> queries = new ArrayList<>();
 
         queries.add("""
-                SELECT l_quantity, l_extendedprice, l_shipdate, l_tax, l_discount
-                                 FROM lineitem
-                                 WHERE l_discount > 0.06 AND l_quantity > 15
+                SELECT "l_tax", "l_quantity"
+                 FROM "public"."lineitem"
+                 WHERE "l_shipdate" < date '1994-06-02'
+                 AND "l_shipdate" > date '1994-01-01'
+                 AND ("l_discount" > 0.08
+                 OR "l_quantity" > 12)
                 """);
 
         queries.add("""
-                SELECT count(*), l_quantity, l_discount
-                                             FROM lineitem
-                                             WHERE l_discount > 0.08 OR (l_quantity > 23 AND l_tax < 0.02)
-                                             GROUP BY l_quantity, l_discount
+                SELECT "l_quantity", "l_discount"
+                FROM "public"."lineitem"
+                WHERE "l_shipdate" > date '1994-01-01'
+                AND "l_shipdate" < date '1994-06-02'
+                AND "l_discount" > 0.02
+                AND "l_quantity" > 32
                 """);
 
 //        queries.add("""
@@ -218,7 +223,7 @@ public class Tester {
 
             for (RelOptMaterialization m : possibles) {
                 RelNode sub = op.substitute(m, executor.getLogicalPlan(queries.get(i)));
-                if (sub != null && r.nextDouble() > 0.5) {
+                if (sub != null) {
                     numDerivable++;
                     continue outerloop;
                 }
@@ -360,11 +365,11 @@ public class Tester {
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
         System.out.println("Setting cache size " + size + " MB");
         Window window = new Window(config, size, policy);
-        window.run(false);
+        window.run(Main.MODE_HYB);
     }
 
-    public void testMain(boolean sequential, int cacheSizeMB) {
+    public void testMain(int mode, int cacheSizeMB) {
         Window window = new Window(config, cacheSizeMB, new LRUPolicy<>());
-        window.run(sequential);
+        window.run(mode);
     }
 }

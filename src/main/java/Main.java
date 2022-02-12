@@ -6,14 +6,19 @@ import java.util.List;
 
 public class Main {
 
+    public static final int MODE_SEQ = 0;
+    public static final int MODE_HYB = 1;
+    public static final int MODE_BAT = 2;
+    public static final int MODE_MVR = 3;
+
     public static final List<Integer> CACHE_SIZES = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
-    public static final List<String> DERIVABILITIES = List.of("40", "45", "54", "60", "66", "75", "78", "83", "88", "90");
+    public static final List<String> DERIVABILITIES = List.of("40", "54", "60", "75", "78", "83", "88", "90");
 
     /*
     The execution is managed by command line arguments
         [mode] [cache size] [derivability]
 
-        mode: 0 for sequential test, 1 for hybrid test
+        mode: 0 for sequential test, 1 for hybrid test, 2 for batch test, 3 for mvr test
         cache size: [0 10] == [4MB 4GB]
         derivability: [0 15]
      */
@@ -25,7 +30,7 @@ public class Main {
         System.out.println("########################################################################################");
         System.out.println("########################################################################################");
 
-        args = new String[] {"1", "1", "3"};
+//        args = new String[] {"2", "0", "0"};
 
         int modeArg = Integer.parseInt(args[0]);
         int cacheSizeArg = Integer.parseInt(args[1]);
@@ -34,16 +39,19 @@ public class Main {
         Configuration config = Configuration.initialize();
         Tester tester = new Tester(config);
 
-        String mode = modeArg == 0 ? "SEQ" : "HYB";
+        String mode = modeArg == 0 ? "SEQ"
+                : modeArg == 1 ? "HYB"
+                : modeArg == 2 ? "BAT"
+                : "MVR";
         int size = CACHE_SIZES.get(cacheSizeArg);
         String der = DERIVABILITIES.get(derivabilityArg);
 
         System.out.printf("Starting with mode: %s, cache size: %dMB, derivability: %s\n", mode, size, DERIVABILITIES.get(derivabilityArg));
 
         QueryReader.dir = der;
-//        tester.testMain(modeArg == 0, size);
+        tester.testMain(modeArg, size);
 
-        tester.normalExecTest();
+//        tester.normalExecTest();
 //        tester.testFindDerivablePercentage();
 //        tester.testMVSubstitution();
 //        tester.testDerivabilityPerf();

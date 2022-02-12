@@ -43,7 +43,7 @@ public class Window {
         this.cache = new Cache<>(policy, Dimension.SIZE(sizeMB * FileUtils.ONE_MB));
     }
 
-    public void run(boolean runSequentially) {
+    public void run(int mode) {
         int count = 0, numQueries = 0;
 
         final long t1 = System.currentTimeMillis();
@@ -59,8 +59,10 @@ public class Window {
             count += 1;
             numQueries += qs.size();
 
-            if (runSequentially) runSequentially(qs);
-            else handle(qs);
+            if (mode == Main.MODE_SEQ) runSequentially(qs);
+            else if (mode == Main.MODE_HYB) handle(qs);
+            else if (mode == Main.MODE_BAT) runInBatchMode(qs);
+            else if (mode == Main.MODE_MVR) runInMVRMode(qs);
         }
 
         long time = System.currentTimeMillis() - t1 - subtractable;
@@ -70,6 +72,55 @@ public class Window {
     private void runSequentially(List<String> queries) {
         for (String query : queries) {
             executor.execute(executor.getLogicalPlan(query), null);
+        }
+    }
+
+    private void runInBatchMode(List<String> queries) {
+        System.out.println("Batching queries:");
+        for (String query : queries) {
+            System.out.println(Utils.getPrintableSql(query) + "\n");
+        }
+
+        List<BatchedQuery> batched = batcher.batch(queries);
+
+        // Find out all the queries from the list that couldn't be batched and run them individually
+        List<Integer> batchedIndexes = batched.stream().flatMap(bq -> bq.indexes.stream()).toList();
+        List<Integer> unbatchedIndexes = IntStream.range(0, queries.size()).boxed().collect(Collectors.toList());
+        unbatchedIndexes.removeAll(batchedIndexes);
+        for (int i : unbatchedIndexes) {
+            executor.execute(executor.getLogicalPlan(queries.get(i)), null);
+        }
+
+        for (BatchedQuery bq : batched) {
+            System.out.println();
+            System.out.println("Batched SQL: " + Utils.getPrintableSql(bq.sql));
+            System.out.println();
+            SqlNode validated = executor.validate(bq.sql);
+            RelNode plan = executor.getLogicalPlan(validated);
+
+            RelOptMaterialization materialization = optimizer.materialize(bq.sql, plan);
+
+            for (SqlNode partQuery : bq.parts) {
+                RelNode logicalPlan = executor.getLogicalPlan(partQuery);
+                RelNode partSubstitutable = materialization != null
+                        ? getSubstitution(materialization, logicalPlan)
+                        : getSubstitution(partQuery, logicalPlan);
+
+                if (partSubstitutable == null) {
+                    logError("This shouldn't happen!!!!!! Batch query is substitutable but parts are not. Exec query normally");
+                    executor.execute(logicalPlan, rs -> System.out.println("Executed " + partQuery.toString()));
+                    continue;
+                }
+                executor.execute(partSubstitutable, rs -> System.out.println("MVS Part Executed " + bq.sql));
+                System.out.println();
+            }
+        }
+
+    }
+
+    private void runInMVRMode(List<String> queries) {
+        for (String query: queries) {
+            runIndividualQuery(query);
         }
     }
 
