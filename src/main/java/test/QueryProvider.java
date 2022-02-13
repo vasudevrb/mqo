@@ -7,9 +7,9 @@ public class QueryProvider {
 
     public List<List<String>> queries;
 
-    public QueryProvider() {
+    public QueryProvider(int type) {
         try {
-            queries = QueryReader.getQueries(10);
+            queries = QueryReader.getQueries(10, type);
         } catch (IOException e) {
             e.printStackTrace();
         }

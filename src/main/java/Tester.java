@@ -168,7 +168,7 @@ public class Tester {
 
     public void printQuerySizes() throws IOException {
         List<Long> sizes = new ArrayList<>();
-        List<String> queries = QueryReader.getQueries(20).stream().flatMap(Collection::stream).toList();
+        List<String> queries = QueryReader.getQueries(20, QueryReader.TYPE_ALL).stream().flatMap(Collection::stream).toList();
         for (int i = 0; i < queries.size(); i++) {
             System.out.println("============================================");
             System.out.println("Executing " + i);
@@ -192,7 +192,7 @@ public class Tester {
 
     public void testFindDerivablePercentage() throws IOException {
         boolean deAgg = true;
-        List<String> queries = QueryReader.getQueries(10).stream().flatMap(Collection::stream).toList();
+        List<String> queries = QueryReader.getQueries(10, QueryReader.TYPE_ALL).stream().flatMap(Collection::stream).toList();
 
         MViewOptimizer op = new MViewOptimizer(config);
         QueryExecutor executor = new QueryExecutor(config);
@@ -242,7 +242,7 @@ public class Tester {
     }
 
     public void testDerivabilityPerf() throws IOException {
-        List<String> queries = QueryReader.getQueries(1).stream().flatMap(Collection::stream).toList();
+        List<String> queries = QueryReader.getQueries(1, QueryReader.TYPE_ALL).stream().flatMap(Collection::stream).toList();
 
         List<SqlNode> validatedNodes = new ArrayList<>();
         for (int i = 0; i < queries.size(); i++) {
@@ -364,12 +364,12 @@ public class Tester {
 
     public void testCacheSizeMetrics(int size, ReplacementPolicy<RelOptMaterialization> policy) {
         System.out.println("Setting cache size " + size + " MB");
-        Window window = new Window(config, size, policy);
+        Window window = new Window(config, size, policy, QueryReader.TYPE_ALL);
         window.run(Main.MODE_HYB);
     }
 
-    public void testMain(int mode, int cacheSizeMB) {
-        Window window = new Window(config, cacheSizeMB, new LRUPolicy<>());
+    public void testMain(int mode, int cacheSizeMB, int queryType) {
+        Window window = new Window(config, cacheSizeMB, new LRUPolicy<>(), queryType);
         window.run(mode);
     }
 }

@@ -16,11 +16,12 @@ public class Main {
 
     /*
     The execution is managed by command line arguments
-        [mode] [cache size] [derivability]
+        [mode] [cache size] [derivability] [query type]
 
         mode: 0 for sequential test, 1 for hybrid test, 2 for batch test, 3 for mvr test
         cache size: [0 10] == [4MB 4GB]
         derivability: [0 15]
+        query type: [0, 1, 2, 3, 4, 5]
      */
 
     public static void main(String[] args) throws Exception {
@@ -35,6 +36,7 @@ public class Main {
         int modeArg = Integer.parseInt(args[0]);
         int cacheSizeArg = Integer.parseInt(args[1]);
         int derivabilityArg = Integer.parseInt(args[2]);
+        int queryTypeArg = Integer.parseInt(args[3]);
 
         Configuration config = Configuration.initialize();
         Tester tester = new Tester(config);
@@ -49,7 +51,7 @@ public class Main {
         System.out.printf("Starting with mode: %s, cache size: %dMB, derivability: %s\n", mode, size, DERIVABILITIES.get(derivabilityArg));
 
         QueryReader.dir = der;
-        tester.testMain(modeArg, size);
+        tester.testMain(modeArg, size, queryTypeArg);
 
 //        tester.normalExecTest();
 //        tester.testFindDerivablePercentage();

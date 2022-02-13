@@ -33,9 +33,9 @@ public class Window {
     //so that we can subtract this from the execution time.
     public long subtractable;
 
-    public Window(Configuration configuration, int sizeMB, ReplacementPolicy<RelOptMaterialization> policy) {
+    public Window(Configuration configuration, int sizeMB, ReplacementPolicy<RelOptMaterialization> policy, int queryType) {
         this.executor = new QueryExecutor(configuration);
-        this.provider = new QueryProvider();
+        this.provider = new QueryProvider(queryType);
 
         this.batcher = new QueryBatcher(configuration, executor);
         this.optimizer = new MViewOptimizer(configuration);
