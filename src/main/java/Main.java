@@ -12,7 +12,7 @@ public class Main {
     public static final int MODE_MVR = 3;
 
     public static final List<Integer> CACHE_SIZES = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
-    public static final List<String> DERIVABILITIES = List.of("40", "54", "60", "75", "78", "83", "88", "90");
+    public static final List<String> DERIVABILITIES = List.of("40", "45", "60", "75", "78", "83", "88", "90");
 
     /*
     The execution is managed by command line arguments
