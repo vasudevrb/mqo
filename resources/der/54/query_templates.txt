@@ -195,39 +195,39 @@ GROUP BY "s_suppkey", "ps_partkey"
 % Simple filter queries
 % 25
 
-SELECT "p_partkey", "p_mfgr", "p_type", "p_size" from "part" where "p_size" between %d and %d
+SELECT "p_partkey", "p_mfgr", "p_type", "p_size" FROM "part" WHERE "p_size" between %d and %d
 
 ==========================
 % 26
 
-SELECT "s_name", "s_acctbal" from "supplier" where "s_acctbal" between %.2f and %.2f
+SELECT "s_name", "s_acctbal" FROM "supplier" WHERE "s_acctbal" between %.2f and %.2f
 
 ==========================
 % 27
 
-SELECT "ps_partkey", "ps_suppkey", "ps_availqty" from "partsupp" where "ps_availqty" > %d and "ps_availqty" < %d
+SELECT "ps_partkey", "ps_suppkey", "ps_availqty" FROM "partsupp" WHERE "ps_availqty" > %d and "ps_availqty" < %d
 
 ==========================
 % 28
 
-SELECT "c_custkey", "c_name", "c_acctbal" from "customer" where "c_acctbal" between %.2f and %.2f
+SELECT "c_custkey", "c_name", "c_acctbal" FROM "customer" WHERE "c_acctbal" between %.2f and %.2f
 
 ==========================
 % 29
 
-SELECT "n_name", "n_regionkey" from "nation" where "n_nationkey" < %d
+SELECT "n_name", "n_regionkey" FROM "nation" WHERE "n_nationkey" < %d
 
 ==========================
 % 30
 
-SELECT "l_tax", "l_quantity" from "lineitem" where "l_quantity" < %d AND "l_tax" < %.2f
+SELECT "l_tax", "l_quantity" FROM "lineitem" WHERE "l_quantity" < %d AND "l_tax" < %.2f
 
 ==========================
 % 31
 
-SELECT "l_tax", "l_quantity" from "lineitem" where "l_tax" < %.2f
+SELECT "l_tax", "l_quantity" FROM "lineitem" WHERE "l_tax" < %.2f
 
 ==========================
 % 32
 
-SELECT "o_orderkey", "o_orderdate", "o_totalprice" from "orders" where "o_totalprice" < %.2f
+SELECT "o_orderkey", "o_orderdate", "o_totalprice" FROM "orders" WHERE "o_totalprice" < %.2f
