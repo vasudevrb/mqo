@@ -146,7 +146,12 @@ public class Window {
         for (RelOptMaterialization materialization : possibles) {
             RelNode substituted = optimizer.substitute(materialization, logicalPlan);
             if (substituted != null) {
-                return substituted;
+                if (Main.lowerDerVal == 0 || r.nextDouble() > Main.lowerDerVal) {
+                    System.out.println();
+                    System.out.println(Main.lowerDerVal == 0 ? "DIR RET" : "COMP");
+                    System.out.println();
+                    return substituted;
+                }
             }
         }
         return null;

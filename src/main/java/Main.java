@@ -11,8 +11,10 @@ public class Main {
     public static final int MODE_BAT = 2;
     public static final int MODE_MVR = 3;
 
+    public static double lowerDerVal = 0;
+
     public static final List<Integer> CACHE_SIZES = List.of(4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096);
-    public static final List<String> DERIVABILITIES = List.of("40", "45", "60", "75", "78", "83", "88", "90");
+    public static final List<String> DERIVABILITIES = List.of("0", "10", "20", "25", "35", "40", "45", "60", "75", "78", "83", "88", "90");
 
     /*
     The execution is managed by command line arguments
@@ -38,6 +40,16 @@ public class Main {
         int derivabilityArg = Integer.parseInt(args[2]);
         int queryTypeArg = Integer.parseInt(args[3]);
 
+        if (derivabilityArg <= 4) {
+            lowerDerVal = derivabilityArg == 0 ? 1
+            : derivabilityArg == 1 ? 0.94
+            : derivabilityArg == 2 ? 0.85
+            : derivabilityArg == 3 ? 0.8
+            : 0.5;
+
+            derivabilityArg = 5;
+        }
+
         Configuration config = Configuration.initialize();
         Tester tester = new Tester(config);
 
@@ -45,13 +57,23 @@ public class Main {
                 : modeArg == 1 ? "HYB"
                 : modeArg == 2 ? "BAT"
                 : "MVR";
+        String queryType = queryTypeArg == 0 ? "ALL"
+                : queryTypeArg == 1 ? "Simple Filter"
+                : queryTypeArg == 2 ? "Complex filter"
+                : queryTypeArg == 3 ? "Filter join"
+                : queryTypeArg == 4 ? "Filter aggregate"
+                : "Filter join aggregate";
         int size = CACHE_SIZES.get(cacheSizeArg);
         String der = DERIVABILITIES.get(derivabilityArg);
 
-        System.out.printf("Starting with mode: %s, cache size: %dMB, derivability: %s\n", mode, size, DERIVABILITIES.get(derivabilityArg));
+        System.out.printf("Starting with mode: %s, cache size: %dMB, derivability: %s, query type: %s\n", mode, size, DERIVABILITIES.get(derivabilityArg), queryType);
+        if (lowerDerVal > 0) {
+            System.out.println("LOW DER: " + lowerDerVal);
+        }
 
         QueryReader.dir = der;
         tester.testMain(modeArg, size, queryTypeArg);
+
 
 //        tester.normalExecTest();
 //        tester.testFindDerivablePercentage();

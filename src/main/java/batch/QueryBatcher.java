@@ -293,6 +293,12 @@ public class QueryBatcher {
         pr.clear();
         pr.addAll(set);
 
+        for (List<Predicate> pp: pr) {
+            if (pp.size() < 2) {
+                System.out.println("GGG");
+            }
+        }
+
         //Remove lists with only 1 predicate
         return pr.stream().filter(l -> l.size() > 1).collect(Collectors.toList());
     }
